@@ -8,11 +8,9 @@ from softsync.exception import CommandException
 class Options:
     def __init__(self,
                  force: bool = False,
-                 recursive: bool = False,
-                 repair: bool = False):
+                 recursive: bool = False):
         self.__force = force
         self.__recursive = recursive
-        self.__repair = repair
 
     @property
     def force(self):
@@ -22,14 +20,9 @@ class Options:
     def recursive(self):
         return self.__recursive
 
-    @property
-    def repair(self):
-        return self.__repair
-
     def __repr__(self):
         return f"force: {self.force}\n" \
-               f"recursive: {self.recursive}" \
-               f"repair: {self.repair}"
+               f"recursive: {self.recursive}"
 
 
 class Root:

@@ -8,7 +8,13 @@ class CommandException(SoftSyncException):
 
 
 class ContextException(SoftSyncException):
-    pass
+    def __init__(self, message, source=None):
+        super().__init__(message)
+        self.__source = source
+
+    @property
+    def source(self):
+        return self.__source
 
 
 class ContextCorruptException(ContextException):

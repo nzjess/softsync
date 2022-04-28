@@ -3,6 +3,7 @@ import os
 from argparse import ArgumentParser
 
 from softsync.commands import cp
+from softsync.commands import repair
 
 from softsync.exception import CommandException, ContextException
 
@@ -15,7 +16,8 @@ def __help(problem: str, parser: ArgumentParser = None) -> None:
 
 
 CLI_COMMANDS = {
-    "cp": (cp.command_cp_cli, cp.command_cp_arg_parser)
+    "cp": (cp.command_cp_cli, cp.command_cp_arg_parser),
+    "repair": (repair.command_repair_cli, repair.command_repair_arg_parser)
 }
 
 

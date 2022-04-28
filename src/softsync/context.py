@@ -69,7 +69,8 @@ class SoftSyncContext:
                     if len(conflicts) > 0:
                         conflicts = "\n  ".join([str(c) for c in conflicts])
                         raise ContextCorruptException(
-                            f"soft link entries conflict with existing files in {self.__path}\n  {conflicts}"
+                            f"soft link entries conflict with existing files in {self.__path}\n  {conflicts}",
+                            self
                         )
 
     def __add_file_entry(self, file_entry: FileEntry, strict: bool) -> Optional[FileEntry]:
