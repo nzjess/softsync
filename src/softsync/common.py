@@ -9,9 +9,11 @@ class Options:
     def __init__(self,
                  force: bool = False,
                  recursive: bool = False,
+                 symbolic: bool = False,
                  dry_run: bool = False):
         self.__force = force
         self.__recursive = recursive
+        self.__symbolic = symbolic
         self.__dry_run = dry_run
 
     @property
@@ -21,6 +23,10 @@ class Options:
     @property
     def recursive(self):
         return self.__recursive
+
+    @property
+    def symbolic(self):
+        return self.__symbolic
 
     @property
     def dry_run(self):

@@ -13,8 +13,9 @@ def command_cp_arg_parser() -> ArgumentParser:
     parser.add_argument("-R", "--root", dest="roots", help="root dir(s)", metavar="src[:dest]", type=str, default=".")
     parser.add_argument("src_path", metavar="src-path", type=str, nargs=1)
     parser.add_argument("dest_path", metavar="dest-path", type=str, nargs='?', default=None)
-    parser.add_argument("-r", "--recursive", dest="recursive", help="recurse into sub-directories", action='store_true')
     parser.add_argument("-f", "--force", dest="force", help="copy over duplicates", action='store_true')
+    parser.add_argument("-r", "--recursive", dest="recursive", help="recurse into sub-directories", action='store_true')
+    parser.add_argument("-s", "--symbolic", dest="symbolic", help="produce symlink", action='store_true')
     parser.add_argument("--dry", dest="dry_run", help="dry run only", action='store_true')
     return parser
 
@@ -23,8 +24,9 @@ def command_cp_cli(args: List[str], parser: ArgumentParser) -> None:
     cmdline = parser.parse_args(args)
     roots = Roots(cmdline.roots)
     options = Options(
-        recursive=cmdline.recursive,
         force=cmdline.force,
+        recursive=cmdline.recursive,
+        symbolic=cmdline.symbolic,
         dry_run=cmdline.dry_run,
     )
     command_cp(roots, cmdline.src_path[0], cmdline.dest_path, options)
