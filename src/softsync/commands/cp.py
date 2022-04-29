@@ -11,7 +11,8 @@ from softsync.context import SoftSyncContext
 def command_cp_arg_parser() -> ArgumentParser:
     parser = ArgumentParser("softsync cp")
     parser.add_argument("-R", "--root", dest="roots", help="root dir(s)", metavar="src[:dest]", type=str, default=".")
-    parser.add_argument("args", metavar="arg", type=str, nargs='+')
+    parser.add_argument("src_path", metavar="src-path", type=str, nargs=1)
+    parser.add_argument("dest_path", metavar="dest-path", type=str, nargs='?', default=None)
     parser.add_argument("-r", "--recursive", dest="recursive", help="recurse into sub-directories", action='store_true')
     parser.add_argument("-f", "--force", dest="force", help="copy over duplicates", action='store_true')
     parser.add_argument("--dry", dest="dry_run", help="dry run only", action='store_true')
@@ -26,15 +27,15 @@ def command_cp_cli(args: List[str], parser: ArgumentParser) -> None:
         force=cmdline.force,
         dry_run=cmdline.dry_run,
     )
-    command_cp(roots, cmdline.args, options)
+    command_cp(roots, cmdline.src_path[0], cmdline.dest_path, options)
 
 
-def command_cp(roots: Roots, args: List[str], options: Options = Options()) -> None:
+def command_cp(roots: Roots, src_path: str, dest_path: str, options: Options = Options()) -> None:
     if roots.dest is None:
-        if len(args) != 2:
-            raise CommandException("root has source only, expected 'src' and 'dest' path args")
-        src_dir, src_file = normalise_path(roots.src.path, args[0])
-        dest_dir, dest_file = normalise_path(roots.src.path, args[1])
+        if dest_path is None:
+            raise CommandException("root has source only, expected both 'src-path' and 'dest-path' args")
+        src_dir, src_file = normalise_path(roots.src.path, src_path)
+        dest_dir, dest_file = normalise_path(roots.src.path, dest_path)
         if not check_dirs_are_disjoint(src_dir, dest_dir):
             raise CommandException("'src' and 'dest' paths must be disjoint")
         if dest_file is not None:
@@ -42,9 +43,9 @@ def command_cp(roots: Roots, args: List[str], options: Options = Options()) -> N
                 raise CommandException("'dest' path must be a directory")
         __dupe(roots.src.path, src_dir, src_file, dest_dir, dest_file, options)
     else:
-        if len(args) != 1:
-            raise CommandException("root has both source and destination, expected only 'src' path arg")
-        src_dir, src_file = normalise_path(roots.src.path, args[0])
+        if dest_path is not None:
+            raise CommandException("root has both source and destination, expected only 'src-path' arg")
+        src_dir, src_file = normalise_path(roots.src.path, src_path)
         __sync(roots.src.path, roots.dest.path, src_dir, src_file, options)
 
 
