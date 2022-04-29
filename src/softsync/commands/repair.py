@@ -39,4 +39,4 @@ def command_repair(root: Root, path: str, options: Options = Options()) -> None:
         print(str(e))
         if not options.dry_run:
             e.source.save()
-            print("\n...repaired.\n")
+            print("\nRepaired.\n")
