@@ -9,7 +9,7 @@ from softsync.context import SoftSyncContext
 
 
 def command_cp_arg_parser() -> ArgumentParser:
-    parser = ArgumentParser("softsync")
+    parser = ArgumentParser("softsync cp")
     parser.add_argument("-R", "--root", dest="roots", help="root dir(s)", metavar="src[:dest]", type=str, default=".")
     parser.add_argument("args", metavar="arg", type=str, nargs='+')
     parser.add_argument("-r", "--recursive", dest="recursive", help="recurse into sub-directories", action='store_true')

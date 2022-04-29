@@ -9,7 +9,7 @@ from softsync.context import SoftSyncContext, FileEntry
 
 
 def command_repair_arg_parser() -> ArgumentParser:
-    parser = ArgumentParser("softsync")
+    parser = ArgumentParser("softsync repair")
     parser.add_argument("-R", "--root", dest="root", help="root dir", metavar="root", type=str, default=".")
     parser.add_argument("path", type=str, nargs=1)
     parser.add_argument("-r", "--recursive", dest="recursive", help="recurse into sub-directories", action='store_true')

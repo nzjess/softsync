@@ -22,12 +22,13 @@ CLI_COMMANDS = {
 
 
 def main():
-    if len(sys.argv) < 2:
+    cmd = None if len(sys.argv) < 2 else sys.argv[1]
+
+    if cmd is None or cmd == "-h":
         commands = "\n  ".join(list(CLI_COMMANDS.keys()))
-        __help(f"Usage: {os.path.basename(sys.argv[0])} cmd [args...]\n\ncommands:\n  {commands}")
+        __help(f"Usage: {os.path.basename(sys.argv[0])} cmd [-h] [args...]\n\ncommands:\n  {commands}")
         return 1
 
-    cmd = sys.argv[1]
     args = sys.argv[2:]
 
     command = CLI_COMMANDS.get(cmd)
