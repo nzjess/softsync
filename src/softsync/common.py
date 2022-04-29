@@ -35,6 +35,7 @@ class Options:
     def __repr__(self):
         return f"force: {self.force}\n" \
                f"recursive: {self.recursive}\n" \
+               f"symbolic: {self.symbolic}\n" \
                f"dry_run: {self.dry_run}"
 
 

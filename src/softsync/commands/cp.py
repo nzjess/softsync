@@ -52,6 +52,8 @@ def command_cp(roots: Roots, src_path: str, dest_path: str, options: Options = O
 
 
 def __dupe(root_dir: str, src_dir: str, src_file: str, dest_dir: str, dest_file: str, options: Options) -> None:
+    if options.symbolic:
+        raise CommandException("symbolic option is not valid here")
     src_ctx = SoftSyncContext(root_dir, src_dir, True, options)
     dest_ctx = SoftSyncContext(root_dir, dest_dir, False, options)
     relative_path = src_ctx.relative_path_to(dest_ctx)
@@ -70,4 +72,8 @@ def __dupe(root_dir: str, src_dir: str, src_file: str, dest_dir: str, dest_file:
 
 
 def __sync(src_root_dir: str, dest_root_dir: str, src_dir: str, src_file: str, options: Options) -> None:
-    print("sync", src_root_dir, dest_root_dir, src_dir, src_file, options)
+    src_ctx = SoftSyncContext(src_root_dir, src_dir, True, options)
+    dest_ctx = SoftSyncContext(dest_root_dir, src_dir, False, options)
+    src_files = src_ctx.list_files(src_file)
+    for file in src_files:
+        src_ctx.sync_file(file, dest_ctx)
