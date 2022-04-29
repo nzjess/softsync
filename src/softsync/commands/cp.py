@@ -14,6 +14,7 @@ def command_cp_arg_parser() -> ArgumentParser:
     parser.add_argument("args", metavar="arg", type=str, nargs='+')
     parser.add_argument("-r", "--recursive", dest="recursive", help="recurse into sub-directories", action='store_true')
     parser.add_argument("-f", "--force", dest="force", help="copy over duplicates", action='store_true')
+    parser.add_argument("--dry", dest="dry_run", help="dry run only", action='store_true')
     return parser
 
 
@@ -23,6 +24,7 @@ def command_cp_cli(args: List[str], parser: ArgumentParser) -> None:
     options = Options(
         recursive=cmdline.recursive,
         force=cmdline.force,
+        dry_run=cmdline.dry_run,
     )
     command_cp(roots, cmdline.args, options)
 
@@ -60,7 +62,8 @@ def __dupe(root_dir: str, src_dir: str, src_file: str, dest_dir: str, dest_file:
     else:
         for file in src_files:
             dest_ctx.dupe_file(file, relative_path, file.name)
-    dest_ctx.save()
+    if not options.dry_run:
+        dest_ctx.save()
 
 
 def __sync(src_root_dir: str, dest_root_dir: str, src_dir: str, src_file: str, options: Options) -> None:

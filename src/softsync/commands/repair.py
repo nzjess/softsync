@@ -13,6 +13,7 @@ def command_repair_arg_parser() -> ArgumentParser:
     parser.add_argument("-R", "--root", dest="root", help="root dir", metavar="root", type=str, default=".")
     parser.add_argument("path", type=str, nargs=1)
     parser.add_argument("-r", "--recursive", dest="recursive", help="recurse into sub-directories", action='store_true')
+    parser.add_argument("--dry", dest="dry_run", help="dry run only", action='store_true')
     return parser
 
 
@@ -22,6 +23,7 @@ def command_repair_cli(args: List[str], parser: ArgumentParser) -> None:
     path = cmdline.path[0]
     options = Options(
         recursive=cmdline.recursive,
+        dry_run=cmdline.dry_run,
     )
     command_repair(root, path, options)
 
@@ -34,6 +36,7 @@ def command_repair(root: Root, path: str, options: Options = Options()) -> None:
         SoftSyncContext(root.path, path_dir, options)
         print("no repair needed")
     except ContextCorruptException as e:
-        e.source.save()
         print(str(e))
-        print("\n...repaired\n")
+        if not options.dry_run:
+            e.source.save()
+            print("\n...repaired.\n")
