@@ -39,7 +39,7 @@ def command_repair(root: Root, path: str, options: Options = Options()) -> Optio
     if path_file is not None:
         raise CommandException("path must be a directory")
     try:
-        SoftSyncContext(root.path, path_dir, options)
+        SoftSyncContext(root.path, path_dir, True, options)
         return None
     except ContextCorruptException as e:
         if not options.dry_run:

@@ -40,19 +40,29 @@ class FileEntry:
 
 
 class SoftSyncContext:
-    def __init__(self, root_dir: str, path: str, options: Options = Options()):
+    def __init__(self, root_dir: str, path: str, path_required: bool, options: Options = Options()):
         self.__root_dir = root_dir
         self.__path = path
         self.__options = options
-        self.__full_path = os.path.join(root_dir, path)
-        self.__init_files()
+        __full_path = self.__init_full_path(path_required)
+        self.__init_files(__full_path)
 
-    def __init_files(self) -> None:
+    def __init_full_path(self, path_required: bool):
+        full_path = os.path.join(self.__root_dir, self.__path)
+        if os.path.exists(full_path):
+            if not os.path.isdir(full_path):
+                raise ContextException(f"path is not a directory: {self.__path}")
+        else:
+            if path_required:
+                raise ContextException(f"directory does not exist: {self.__path}")
+        return full_path
+
+    def __init_files(self, full_path: str) -> None:
         self.__files: Dict[str, FileEntry] = {}
-        self.__manifest_dir = os.path.join(self.__full_path, ".softsync")
+        self.__manifest_dir = os.path.join(full_path, ".softsync")
         self.__softlinks_file = os.path.join(self.__manifest_dir, "softlinks.json")
-        if os.path.exists(self.__full_path):
-            for entry in os.scandir(self.__full_path):
+        if os.path.exists(full_path):
+            for entry in os.scandir(full_path):
                 if entry.is_file():
                     file_entry = FileEntry(entry.name)
                     if self.__add_file_entry(file_entry, False) is not None:

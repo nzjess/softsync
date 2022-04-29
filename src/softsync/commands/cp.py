@@ -49,8 +49,8 @@ def command_cp(roots: Roots, args: List[str], options: Options = Options()) -> N
 
 
 def __dupe(root_dir: str, src_dir: str, src_file: str, dest_dir: str, dest_file: str, options: Options) -> None:
-    src_ctx = SoftSyncContext(root_dir, src_dir, options)
-    dest_ctx = SoftSyncContext(root_dir, dest_dir, options)
+    src_ctx = SoftSyncContext(root_dir, src_dir, True, options)
+    dest_ctx = SoftSyncContext(root_dir, dest_dir, False, options)
     relative_path = src_ctx.relative_path_to(dest_ctx)
     src_files = src_ctx.list_files(src_file)
     if len(src_files) == 0:
