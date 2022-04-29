@@ -56,7 +56,7 @@ class SoftSyncContext:
                 if entry.is_file():
                     file_entry = FileEntry(entry.name)
                     if self.__add_file_entry(file_entry, False) is not None:
-                        raise ValueError(f"filesystem conflict: {file_entry}")
+                        raise ValueError(f"FATAL filesystem conflict, in: {self.__path}, on: {entry.name}")
             if os.path.exists(self.__softlinks_file):
                 if not os.path.isfile(self.__softlinks_file):
                     raise ContextException("manifest file location conflict")
@@ -67,9 +67,9 @@ class SoftSyncContext:
                         if self.__add_file_entry(file_entry, False) is not None:
                             conflicts.append(file_entry)
                     if len(conflicts) > 0:
-                        conflicts = "\n  ".join([str(c) for c in conflicts])
                         raise ContextCorruptException(
-                            f"softlink entries conflict with existing files in {self.__path}\n  {conflicts}",
+                            f"softlink entries conflict with files in: {self.__path}",
+                            conflicts,
                             self
                         )
 

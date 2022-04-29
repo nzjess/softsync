@@ -1,7 +1,7 @@
-import typing
+from typing import TYPE_CHECKING, List
 
-if typing.TYPE_CHECKING:
-    from softsync.context import SoftSyncContext
+if TYPE_CHECKING:
+    from softsync.context import SoftSyncContext, FileEntry
 
 
 class SoftSyncException(Exception):
@@ -23,4 +23,10 @@ class ContextException(SoftSyncException):
 
 
 class ContextCorruptException(ContextException):
-    pass
+    def __init__(self, message: str, conflicts: List["FileEntry"], source: "SoftSyncContext" = None):
+        super().__init__(message, source)
+        self.__conflicts = conflicts
+
+    @property
+    def conflicts(self):
+        return self.__conflicts
