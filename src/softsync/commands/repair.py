@@ -1,11 +1,11 @@
 from argparse import ArgumentParser
 
-from typing import List
+from typing import List, Optional
 
 from softsync.common import Options, Root
 from softsync.common import normalise_path
 from softsync.exception import CommandException, ContextCorruptException
-from softsync.context import SoftSyncContext
+from softsync.context import SoftSyncContext, FileEntry
 
 
 def command_repair_arg_parser() -> ArgumentParser:
@@ -25,18 +25,23 @@ def command_repair_cli(args: List[str], parser: ArgumentParser) -> None:
         recursive=cmdline.recursive,
         dry_run=cmdline.dry_run,
     )
-    command_repair(root, path, options)
+    conflicts = command_repair(root, path, options)
+    if conflicts is None:
+        print("no repair needed")
+    else:
+        message = "repaired" if not cmdline.dry_run else "needs repair"
+        conflicts = "\n  ".join([str(c) for c in conflicts])
+        print(f"{message}:\n  {conflicts}")
 
 
-def command_repair(root: Root, path: str, options: Options = Options()) -> None:
+def command_repair(root: Root, path: str, options: Options = Options()) -> Optional[List[FileEntry]]:
     path_dir, path_file = normalise_path(root.path, path)
     if path_file is not None:
         raise CommandException("path must be a directory")
     try:
         SoftSyncContext(root.path, path_dir, options)
-        print("no repair needed")
+        return None
     except ContextCorruptException as e:
-        print(str(e))
         if not options.dry_run:
             e.source.save()
-            print("\nRepaired.\n")
+        return e.conflicts
