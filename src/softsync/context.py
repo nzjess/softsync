@@ -138,14 +138,16 @@ class SoftSyncContext:
         file_entry = FileEntry(dest_file, link)
         self.__add_file_entry(file_entry, True)
 
-    def sync_file(self, file: FileEntry, dest_ctx: "SoftSyncContext"):
+    def sync_file(self, file: FileEntry, dest_ctx: "SoftSyncContext",
+                  context_cache: Optional[Dict[str, "SoftSyncContext"]] = None):
         if self.__root_dir == dest_ctx.__root_dir:
             raise ValueError("contexts must not have the same root dir")
-        context, src_file = self.__resolve(file.name)
+        context, src_file = self.__resolve(file.name, context_cache)
         src_file = os.path.join(context.__full_path, src_file)
         dest_ctx.__sync(src_file, file.name)
 
-    def __resolve(self, file_name: str) -> ("SoftSyncContext", str):
+    def __resolve(self, file_name: str,
+                  context_cache: Optional[Dict[str, "SoftSyncContext"]] = None) -> ("SoftSyncContext", str):
         file = self.__files.get(file_name, None)
         if file is None:
             raise ContextException(f"failed to resolve file: {file_name}")
@@ -153,9 +155,13 @@ class SoftSyncContext:
             return self
         link_file_path = os.path.join(self.__root_dir, file.link)
         root_dir = os.path.dirname(str(Path(link_file_path).resolve()))
-        context = SoftSyncContext(root_dir, ".", True, self.__options)
+        context = context_cache.get(root_dir, None) if context_cache is not None else None
+        if context is None:
+            context = SoftSyncContext(root_dir, ".", True, self.__options)
+            if context_cache is not None:
+                context_cache[root_dir] = context
         link_name = os.path.basename(file.link)
-        return context.__resolve(link_name), link_name
+        return context.__resolve(link_name, context_cache), link_name
 
     def __sync(self, src_file: str, dest_file: str):
         dest_file_path = os.path.join(self.__full_path, dest_file)

@@ -75,5 +75,6 @@ def __sync(src_root_dir: str, dest_root_dir: str, src_dir: str, src_file: str, o
     src_ctx = SoftSyncContext(src_root_dir, src_dir, True, options)
     dest_ctx = SoftSyncContext(dest_root_dir, src_dir, False, options)
     src_files = src_ctx.list_files(src_file)
+    context_cache = {}
     for file in src_files:
-        src_ctx.sync_file(file, dest_ctx)
+        src_ctx.sync_file(file, dest_ctx, context_cache)
