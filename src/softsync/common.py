@@ -10,10 +10,12 @@ class Options:
                  force: bool = False,
                  recursive: bool = False,
                  symbolic: bool = False,
+                 verbose: bool = False,
                  dry_run: bool = False):
         self.__force = force
         self.__recursive = recursive
         self.__symbolic = symbolic
+        self.__verbose = verbose
         self.__dry_run = dry_run
 
     @property
@@ -29,6 +31,10 @@ class Options:
         return self.__symbolic
 
     @property
+    def verbose(self):
+        return self.__verbose
+
+    @property
     def dry_run(self):
         return self.__dry_run
 
@@ -36,6 +42,7 @@ class Options:
         return f"force: {self.force}\n" \
                f"recursive: {self.recursive}\n" \
                f"symbolic: {self.symbolic}\n" \
+               f"verbose: {self.verbose}\n" \
                f"dry_run: {self.dry_run}"
 
 

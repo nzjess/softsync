@@ -13,6 +13,7 @@ def command_repair_arg_parser() -> ArgumentParser:
     parser.add_argument("-R", "--root", dest="root", help="root dir", metavar="root", type=str, default=".")
     parser.add_argument("path", type=str, nargs=1)
     parser.add_argument("-r", "--recursive", dest="recursive", help="recurse into sub-directories", action='store_true')
+    parser.add_argument("-v", "--verbose", dest="verbose", help="verbose output", action='store_true')
     parser.add_argument("--dry", dest="dry_run", help="dry run only", action='store_true')
     return parser
 
@@ -23,6 +24,7 @@ def command_repair_cli(args: List[str], parser: ArgumentParser) -> None:
     path = cmdline.path[0]
     options = Options(
         recursive=cmdline.recursive,
+        verbose=cmdline.verbose,
         dry_run=cmdline.dry_run,
     )
     conflicts = command_repair(root, path, options)
@@ -30,8 +32,11 @@ def command_repair_cli(args: List[str], parser: ArgumentParser) -> None:
         print("no repair needed")
     else:
         message = "repaired" if not cmdline.dry_run else "needs repair"
-        conflicts = "\n  ".join([str(c) for c in conflicts])
-        print(f"{message}:\n  {conflicts}")
+        if options.verbose:
+            conflicts = "\n  ".join([str(c) for c in conflicts])
+            print(f"{message}:\n  {conflicts}")
+        else:
+            print(message)
 
 
 def command_repair(root: Root, path: str, options: Options = Options()) -> Optional[List[FileEntry]]:
