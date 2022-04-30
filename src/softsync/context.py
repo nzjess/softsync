@@ -5,10 +5,14 @@ import fnmatch
 import shutil
 from pathlib import Path
 
-from typing import List, Dict, Union, Optional, Callable, Pattern
+from typing import List, Dict, Union, Optional, Callable, Pattern, Any
 
 from softsync.common import Options
 from softsync.exception import ContextException, ContextCorruptException
+
+
+SOFTSYNC_MANIFEST_FILENAME = ".softsync"
+SOFTLINKS_KEY = "softlinks"
 
 
 class FileEntry:
@@ -34,7 +38,7 @@ class FileEntry:
             return f"{self.name}"
 
     @property
-    def json(self):
+    def json(self) -> Dict[str, str]:
         return {
             "name": self.name,
             "link": self.link
@@ -46,6 +50,7 @@ class SoftSyncContext:
         self.__root_dir = root_dir
         self.__path = "" if path == "." else path
         self.__options = options
+        self.__manifest: Optional[Dict[str, Any]] = None
         self.__init_full_path(path_must_exist)
         self.__init_files()
 
@@ -60,29 +65,31 @@ class SoftSyncContext:
 
     def __init_files(self) -> None:
         self.__files: Dict[str, FileEntry] = {}
-        self.__manifest_dir = os.path.join(self.__full_path, ".softsync")
-        self.__softlinks_file = os.path.join(self.__manifest_dir, "softlinks.json")
+        self.__manifest_file = os.path.join(self.__full_path, SOFTSYNC_MANIFEST_FILENAME)
         if os.path.exists(self.__full_path):
             for entry in os.scandir(self.__full_path):
                 if entry.is_file():
                     file_entry = FileEntry(entry.name)
                     if self.__add_file_entry(file_entry, False) is not None:
                         raise ValueError(f"FATAL filesystem conflict, in: {self.__path}, on: {entry.name}")
-            if os.path.exists(self.__softlinks_file):
-                if not os.path.isfile(self.__softlinks_file):
+            if os.path.exists(self.__manifest_file):
+                if not os.path.isfile(self.__manifest_file):
                     raise ContextException("manifest file location conflict")
-                with open(self.__softlinks_file, 'r') as file:
-                    conflicts = []
-                    for entry in json.load(file):
-                        file_entry = FileEntry(**entry)
-                        if self.__add_file_entry(file_entry, False) is not None:
-                            conflicts.append(file_entry)
-                    if len(conflicts) > 0:
-                        raise ContextCorruptException(
-                            f"softlink entries conflict with files in: {self.__path}",
-                            conflicts,
-                            self
-                        )
+                with open(self.__manifest_file, 'r') as file:
+                    self.__manifest = json.load(file)
+                    entries: List[Dict[str, str]] = self.__manifest.get(SOFTLINKS_KEY, None)
+                    if entries is not None:
+                        conflicts = []
+                        for entry in entries:
+                            file_entry = FileEntry(**entry)
+                            if self.__add_file_entry(file_entry, False) is not None:
+                                conflicts.append(file_entry)
+                        if len(conflicts) > 0:
+                            raise ContextCorruptException(
+                                f"softlink entries conflict with files in: {self.__path}",
+                                conflicts,
+                                self
+                            )
 
     def __add_file_entry(self, file_entry: FileEntry, strict: bool) -> Optional[FileEntry]:
         existing_entry = self.__files.get(file_entry.name)
@@ -93,14 +100,17 @@ class SoftSyncContext:
         return existing_entry
 
     def save(self) -> None:
-        os.makedirs(self.__manifest_dir, exist_ok=True)
-        with open(self.__softlinks_file, 'w') as file:
-            entries = []
+        os.makedirs(self.__full_path, exist_ok=True)
+        with open(self.__manifest_file, 'w') as file:
+            if self.__manifest is None:
+                self.__manifest = {}
+            entries: List[Dict[str, str]] = []
             for entry in self.__files.values():
                 if entry.is_soft():
                     entries.append(entry.json)
             entries.sort(key=lambda e: e["name"])
-            json.dump(entries, file, indent=2)
+            self.__manifest[SOFTLINKS_KEY] = entries
+            json.dump(self.__manifest, file, indent=2)
 
     def relative_path_to(self, other: "SoftSyncContext") -> str:
         if self.__root_dir != other.__root_dir:
