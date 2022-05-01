@@ -2,6 +2,8 @@ import os
 from pathlib import Path
 from urllib.parse import urlparse
 
+from typing import Optional, Union, Tuple
+
 from softsync.exception import CommandException
 
 
@@ -82,29 +84,42 @@ class Root:
 
 
 class Roots:
-    def __init__(self, roots: str):
-        roots = roots.strip()
-        if not roots:
-            raise CommandException("invalid root, empty")
-        if roots.find("*") >= 0 or roots.find("?") >= 0:
-            raise CommandException("invalid root, invalid chars")
-        roots = roots.replace("://", "*")
-        roots = roots.replace(":\\", "?")
-        roots = roots.split(":")
-        roots = [r.replace("*", "://") for r in roots]
-        roots = [r.replace("?", ":\\") for r in roots]
-        self.__src = Root(roots[0])
-        self.__dest = None
-        if len(roots) == 1:
-            pass
-        elif len(roots) == 2:
-            self.__dest = Root(roots[1])
-            if not check_dirs_are_disjoint(self.__src.path, self.__dest.path):
-                raise CommandException("invalid roots, 'src' and 'dest' must be disjoint")
+    def __init__(self, roots: Union[str, Root, Tuple[Root, Root]]):
+        if isinstance(roots, str):
+            roots = roots.strip()
+            if not roots:
+                raise CommandException("invalid root, empty")
+            if roots.find("*") >= 0 or roots.find("?") >= 0:
+                raise CommandException("invalid root, invalid chars")
+            roots = roots.replace("://", "*")
+            roots = roots.replace(":\\", "?")
+            roots = roots.split(":")
+            roots = [r.replace("*", "://") for r in roots]
+            roots = [r.replace("?", ":\\") for r in roots]
+            self.__src = Root(roots[0])
+            self.__dest = None
+            if len(roots) == 1:
+                pass
+            elif len(roots) == 2:
+                self.__dest = Root(roots[1])
+            else:
+                raise CommandException("invalid roots, too many components")
+        elif isinstance(roots, Root):
+            self.__src = roots
+            self.__dest = None
+        elif isinstance(roots, tuple):
+            if len(roots) == 2:
+                self.__src = roots[0]
+                self.__dest = roots[1]
+            else:
+                raise CommandException("invalid roots, too many components")
         else:
-            raise CommandException("invalid root, too many components")
+            raise ValueError(f"invalid type for roots: {type(roots)}")
         if self.__src.scheme != "file" or (self.__dest is not None and self.__dest.scheme != "file"):
             raise CommandException("invalid root(s), must have file scheme")
+        if self.__src is not None and self.__dest is not None:
+            if not check_dirs_are_disjoint(self.__src.path, self.__dest.path):
+                raise CommandException("invalid roots, 'src' and 'dest' must be disjoint")
 
     def __str__(self):
         return f"{self.__src}:{self.__dest}"
@@ -118,12 +133,12 @@ class Roots:
         return self.__dest
 
 
-def is_file_pattern(name: str) -> bool:
+def is_glob_pattern(name: str) -> bool:
     return name.find("*") != -1 or \
            name.find("?") != -1
 
 
-def normalise_path(root: str, path: str) -> (str, str):
+def split_path(root: str, path: str) -> (str, Optional[str]):
     path = path.strip()
     if path.startswith(os.sep):
         raise CommandException("invalid path, cannot be absolute")
@@ -139,8 +154,8 @@ def normalise_path(root: str, path: str) -> (str, str):
         if component == "." or component == "..":
             raise CommandException("invalid path, cannot contain relative components")
         if has_trailing_slash or i < len(components) - 1:
-            if is_file_pattern(component):
-                raise CommandException("invalid path, invalid matching patterns")
+            if is_glob_pattern(component):
+                raise CommandException("invalid path, invalid glob patterns")
     split = path.rsplit(os.sep, 1)
     full_path = os.path.join(root, path)
     if os.path.exists(full_path):
@@ -156,7 +171,7 @@ def normalise_path(root: str, path: str) -> (str, str):
     if has_trailing_slash:
         return path, None
     rsplit = path if len(split) == 1 else split[1]
-    if is_file_pattern(rsplit) or rsplit.find(".") != -1:  # heuristic
+    if is_glob_pattern(rsplit) or rsplit.find(".") != -1:  # heuristic
         if len(split) == 1:
             return ".", path
         else:

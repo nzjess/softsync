@@ -3,9 +3,9 @@ from argparse import ArgumentParser
 from typing import List, Optional
 
 from softsync.common import Options, Root
-from softsync.common import normalise_path
-from softsync.exception import CommandException, ContextCorruptException
+from softsync.common import split_path
 from softsync.context import SoftSyncContext, FileEntry
+from softsync.exception import CommandException, ContextCorruptException
 
 
 def command_repair_arg_parser() -> ArgumentParser:
@@ -40,7 +40,7 @@ def command_repair_cli(args: List[str], parser: ArgumentParser) -> None:
 
 
 def command_repair(root: Root, path: str, options: Options = Options()) -> Optional[List[FileEntry]]:
-    path_dir, path_file = normalise_path(root.path, path)
+    path_dir, path_file = split_path(root.path, path)
     if path_file is not None:
         raise CommandException("path must be a directory")
     try:

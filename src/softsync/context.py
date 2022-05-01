@@ -128,7 +128,8 @@ class SoftSyncContext:
         )
         return relative_path
 
-    def list_files(self, file_matcher: Optional[Union[str, Pattern, Callable]] = None) -> List[FileEntry]:
+    def list_files(self,
+                   file_matcher: Optional[Union[str, Pattern, Callable]] = None) -> List[FileEntry]:
         files: List[FileEntry] = list(self.__files.values())
         if file_matcher is not None:
             if isinstance(file_matcher, str):
@@ -143,7 +144,16 @@ class SoftSyncContext:
                 raise ValueError(f"invalid type for file_matcher: {type(file_matcher)}")
         return files
 
-    def dupe_file(self, src_file: FileEntry, relative_path: str, dest_file: str) -> None:
+    def dupe_file(self, src_file: FileEntry, relative_path: str,
+                  file_mapper: Optional[Union[str, Callable]] = None) -> None:
+        if file_mapper is None:
+            dest_file = src_file.name
+        elif isinstance(file_mapper, str):
+            dest_file = file_mapper
+        elif isinstance(file_mapper, Callable):
+            dest_file = file_mapper(src_file.name)
+        else:
+            raise ValueError(f"invalid type for file_mapper: {type(file_mapper)}")
         link = os.path.join(relative_path, src_file.name)
         file_entry = FileEntry(dest_file, link)
         self.__add_file_entry(file_entry, True)

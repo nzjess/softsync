@@ -1,10 +1,11 @@
 from argparse import ArgumentParser
 
-from typing import List
+from typing import List, Optional, Callable
 
 from softsync.common import Options, Root
-from softsync.common import normalise_path
+from softsync.common import split_path
 from softsync.context import SoftSyncContext, FileEntry
+from softsync.exception import CommandException
 
 
 def command_ls_arg_parser() -> ArgumentParser:
@@ -24,7 +25,11 @@ def command_ls_cli(args: List[str], parser: ArgumentParser) -> None:
         print(file)
 
 
-def command_ls(root: Root, path: str, options: Options = Options()) -> List[FileEntry]:
-    path_dir, path_file = normalise_path(root.path, path)
+def command_ls(root: Root, path: str, options: Options = Options(),
+               matcher: Optional[Callable] = None) -> List[FileEntry]:
+    path_dir, path_file = split_path(root.path, path)
+    if path_file is not None:
+        if matcher is not None:
+            raise CommandException("'src-path' must be a directory if matcher function is used")
     context = SoftSyncContext(root.path, path_dir, True, options)
-    return context.list_files(path_file)
+    return context.list_files(matcher if matcher is not None else path_file)

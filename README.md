@@ -205,7 +205,7 @@ expanding them first.
 The `cp` command also supports copying all the files in a directory,
 just pass the directory itself as the source path parameter.
 
-### Programmatic usage (coming soon)
+### Programmatic usage
 
 The command line interface is just that, an interface.  All the
 commands can be used programmatically by importing the softsync API
@@ -216,3 +216,37 @@ example, it can be provided with a "file rename" mapping function which will
 be used when copying multiple files from source to destination.
 Custom file filtering functions can also be can be used to select which
 files to process.
+
+The following is the programmatic equivalent of a couple of the commands from
+the CLI examples above:
+
+```python
+from softsync.common import Root, Roots, Options
+from softsync.commands.cp import command_cp
+
+# softsync cp foo/world.txt bar/mars.txt
+root = Root(".")
+files = command_cp(
+    root,
+    "foo/world.txt",
+    "bar/mars.txt",
+)
+for file in files:
+    print(file)
+
+# softsync cp -R bar:qux mars.txt --symbolic
+src = Root("bar")
+dest = Root("qux")
+roots = Roots((src, dest))
+options = Options(
+    symbolic=True,
+)
+files = command_cp(
+    roots,
+    "mars.txt",
+    None,
+    options,
+)
+for file in files:
+    print(file)
+```
