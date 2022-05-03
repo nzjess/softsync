@@ -24,6 +24,8 @@ def command_cp_arg_parser() -> ArgumentParser:
 def command_cp_cli(args: List[str], parser: ArgumentParser) -> None:
     cmdline = parser.parse_args(args)
     roots = Roots(cmdline.roots)
+    src_path = cmdline.src_path[0]
+    dest_path = cmdline.dest_path
     options = Options(
         force=cmdline.force,
         recursive=cmdline.recursive,
@@ -31,7 +33,12 @@ def command_cp_cli(args: List[str], parser: ArgumentParser) -> None:
         verbose=cmdline.verbose,
         dry_run=cmdline.dry_run,
     )
-    files = command_cp(roots, cmdline.src_path[0], cmdline.dest_path, options)
+    files = command_cp(
+        roots,
+        src_path,
+        dest_path,
+        options
+    )
     if options.verbose:
         for file in files:
             print(file)

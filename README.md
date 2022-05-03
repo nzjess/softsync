@@ -235,17 +235,16 @@ for file in files:
     print(file)
 
 # softsync cp -R bar:qux mars.txt --symbolic
-src = Root("bar")
-dest = Root("qux")
-roots = Roots((src, dest))
+roots = Roots(
+    (Root("bar"), Root("qux"))
+)
 options = Options(
     symbolic=True,
 )
 files = command_cp(
     roots,
     "mars.txt",
-    None,
-    options,
+    options=options,
 )
 for file in files:
     print(file)

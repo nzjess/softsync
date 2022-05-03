@@ -27,7 +27,11 @@ def command_repair_cli(args: List[str], parser: ArgumentParser) -> None:
         verbose=cmdline.verbose,
         dry_run=cmdline.dry_run,
     )
-    conflicts = command_repair(root, path, options)
+    conflicts = command_repair(
+        root,
+        path,
+        options
+    )
     if conflicts is None:
         print("no repair needed")
     else:
@@ -39,7 +43,8 @@ def command_repair_cli(args: List[str], parser: ArgumentParser) -> None:
             print(message)
 
 
-def command_repair(root: Root, path: str, options: Options = Options()) -> Optional[List[FileEntry]]:
+def command_repair(root: Root, path: str,
+                   options: Options = Options()) -> Optional[List[FileEntry]]:
     path_dir, path_file = split_path(root.path, path)
     if path_file is not None:
         raise CommandException("path must be a directory")

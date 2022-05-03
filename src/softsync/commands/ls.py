@@ -20,12 +20,17 @@ def command_ls_cli(args: List[str], parser: ArgumentParser) -> None:
     root = Root(cmdline.root)
     path = cmdline.path[0]
     options = Options()
-    files = command_ls(root, path, options)
+    files = command_ls(
+        root,
+        path,
+        options
+    )
     for file in files:
         print(file)
 
 
-def command_ls(root: Root, path: str, options: Options = Options(),
+def command_ls(root: Root, path: str,
+               options: Options = Options(),
                matcher: Optional[Callable] = None) -> List[FileEntry]:
     path_dir, path_file = split_path(root.path, path)
     if path_file is not None:
