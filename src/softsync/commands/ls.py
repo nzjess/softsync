@@ -8,19 +8,19 @@ from softsync.context import SoftSyncContext, FileEntry
 from softsync.exception import CommandException
 
 
-def command_ls_arg_parser() -> ArgumentParser:
+def softsync_ls_arg_parser() -> ArgumentParser:
     parser = ArgumentParser("softsync ls")
     parser.add_argument("-R", "--root", dest="root", help="root dir", metavar="root", type=str, default=".")
     parser.add_argument("path", type=str, nargs=1)
     return parser
 
 
-def command_ls_cli(args: List[str], parser: ArgumentParser) -> None:
+def softsync_ls_cli(args: List[str], parser: ArgumentParser) -> None:
     cmdline = parser.parse_args(args)
     root = Root(cmdline.root)
     path = cmdline.path[0]
     options = Options()
-    files = command_ls(
+    files = softsync_ls(
         root,
         path,
         options
@@ -29,9 +29,9 @@ def command_ls_cli(args: List[str], parser: ArgumentParser) -> None:
         print(file)
 
 
-def command_ls(root: Root, path: str,
-               options: Options = Options(),
-               matcher: Optional[Callable] = None) -> List[FileEntry]:
+def softsync_ls(root: Root, path: str,
+                options: Options = Options(),
+                matcher: Optional[Callable] = None) -> List[FileEntry]:
     path_dir, path_file = split_path(root.path, path)
     if path_file is not None:
         if matcher is not None:

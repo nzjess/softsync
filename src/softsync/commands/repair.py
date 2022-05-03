@@ -8,7 +8,7 @@ from softsync.context import SoftSyncContext, FileEntry
 from softsync.exception import CommandException, ContextCorruptException
 
 
-def command_repair_arg_parser() -> ArgumentParser:
+def softsync_repair_arg_parser() -> ArgumentParser:
     parser = ArgumentParser("softsync repair")
     parser.add_argument("-R", "--root", dest="root", help="root dir", metavar="root", type=str, default=".")
     parser.add_argument("path", type=str, nargs=1)
@@ -18,7 +18,7 @@ def command_repair_arg_parser() -> ArgumentParser:
     return parser
 
 
-def command_repair_cli(args: List[str], parser: ArgumentParser) -> None:
+def softsync_repair_cli(args: List[str], parser: ArgumentParser) -> None:
     cmdline = parser.parse_args(args)
     root = Root(cmdline.root)
     path = cmdline.path[0]
@@ -27,7 +27,7 @@ def command_repair_cli(args: List[str], parser: ArgumentParser) -> None:
         verbose=cmdline.verbose,
         dry_run=cmdline.dry_run,
     )
-    conflicts = command_repair(
+    conflicts = softsync_repair(
         root,
         path,
         options
@@ -43,8 +43,8 @@ def command_repair_cli(args: List[str], parser: ArgumentParser) -> None:
             print(message)
 
 
-def command_repair(root: Root, path: str,
-                   options: Options = Options()) -> Optional[List[FileEntry]]:
+def softsync_repair(root: Root, path: str,
+                    options: Options = Options()) -> Optional[List[FileEntry]]:
     path_dir, path_file = split_path(root.path, path)
     if path_file is not None:
         raise CommandException("path must be a directory")

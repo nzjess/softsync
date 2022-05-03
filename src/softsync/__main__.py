@@ -17,9 +17,9 @@ def __help(problem: str, parser: ArgumentParser = None) -> None:
 
 
 CLI_COMMANDS = {
-    "cp": (cp.command_cp_cli, cp.command_cp_arg_parser),
-    "ls": (ls.command_ls_cli, ls.command_ls_arg_parser),
-    "repair": (repair.command_repair_cli, repair.command_repair_arg_parser)
+    "cp": (cp.softsync_cp_cli, cp.softsync_cp_arg_parser),
+    "ls": (ls.softsync_ls_cli, ls.softsync_ls_arg_parser),
+    "repair": (repair.softsync_repair_cli, repair.softsync_repair_arg_parser)
 }
 
 

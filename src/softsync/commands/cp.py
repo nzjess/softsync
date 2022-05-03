@@ -8,7 +8,7 @@ from softsync.context import SoftSyncContext, FileEntry
 from softsync.exception import CommandException
 
 
-def command_cp_arg_parser() -> ArgumentParser:
+def softsync_cp_arg_parser() -> ArgumentParser:
     parser = ArgumentParser("softsync cp")
     parser.add_argument("-R", "--root", dest="roots", help="root dir(s)", metavar="src[:dest]", type=str, default=".")
     parser.add_argument("src_path", metavar="src-path", type=str, nargs=1)
@@ -21,7 +21,7 @@ def command_cp_arg_parser() -> ArgumentParser:
     return parser
 
 
-def command_cp_cli(args: List[str], parser: ArgumentParser) -> None:
+def softsync_cp_cli(args: List[str], parser: ArgumentParser) -> None:
     cmdline = parser.parse_args(args)
     roots = Roots(cmdline.roots)
     src_path = cmdline.src_path[0]
@@ -33,7 +33,7 @@ def command_cp_cli(args: List[str], parser: ArgumentParser) -> None:
         verbose=cmdline.verbose,
         dry_run=cmdline.dry_run,
     )
-    files = command_cp(
+    files = softsync_cp(
         roots,
         src_path,
         dest_path,
@@ -44,8 +44,8 @@ def command_cp_cli(args: List[str], parser: ArgumentParser) -> None:
             print(file)
 
 
-def command_cp(root: Union[Root, Roots], src_path: str, dest_path: Optional[str] = None, options: Options = Options(),
-               matcher: Optional[Callable] = None, mapper: Optional[Callable] = None) -> List[FileEntry]:
+def softsync_cp(root: Union[Root, Roots], src_path: str, dest_path: Optional[str] = None, options: Options = Options(),
+                matcher: Optional[Callable] = None, mapper: Optional[Callable] = None) -> List[FileEntry]:
     if isinstance(root, Roots):
         src_root = root.src
         dest_root = root.dest

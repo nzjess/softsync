@@ -222,11 +222,11 @@ the CLI examples above:
 
 ```python
 from softsync.common import Root, Roots, Options
-from softsync.commands.cp import command_cp
+from softsync.commands.cp import softsync_cp
 
 # softsync cp foo/world.txt bar/mars.txt
 root = Root(".")
-files = command_cp(
+files = softsync_cp(
     root,
     "foo/world.txt",
     "bar/mars.txt",
@@ -241,7 +241,7 @@ roots = Roots(
 options = Options(
     symbolic=True,
 )
-files = command_cp(
+files = softsync_cp(
     roots,
     "mars.txt",
     options=options,
