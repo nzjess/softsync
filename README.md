@@ -2,8 +2,6 @@
 
 _Sync softly_
 
-#### Python 3.6+
-
 Softsync helps you create and manage symbolic links to real files.  But, rather than
 store the links as separate files, as with traditional symlinks (think: `ln -s source target`),
 the links are stored in a single manifest file, per directory.  These kinds of links
@@ -20,11 +18,15 @@ provide direct support for symbolic links.  A good example of this is Amazon's S
 can represent directory hierarchies, but has no native method of storing a symbolic link
 to another object.
 
+### Requires
+
+python >= 3.6
+
+pip >= 21.3.1
+
 ### Install
 
 `pip install softsync`
-
-_Requires pip version >= 21.3.1_
 
 ### Usage
 
