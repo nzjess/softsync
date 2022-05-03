@@ -95,31 +95,38 @@ optional arguments:
 
 ### Examples
 
-Start with a directory containing some regular files:
+Start with a directory containing some regular files and folders, like this:
 
 ```
 ./
-└── foo/
-      ├── hello.txt
-      └── world.txt
+├── alpha/
+│   └── foo/
+│         ├── hello.txt
+│         └── world.txt
+└── omega/
 ```
 
-Then make a soft copy of one of the files:
+This represents two "root" directories, `alpha` and `omega`.  The first starts out with some normal files.
+The second is empty, for now.
 
-`softsync cp foo/hello.txt bar`
+First make a soft copy of the `foo/hello.txt` file into a new `bar` subdirectory, within the `alpha` root:
+
+`softsync cp -R alpha foo/hello.txt bar`
 
 This will yield:
 
 ```
 ./
-└── foo/
-      ├── hello.txt
-      └── world.txt
-└── bar/
-      └── .softsync
+├── alpha/
+│   ├── foo/
+│   │     ├── hello.txt
+│   │     └── world.txt
+│   └── bar/
+│         └── .softsync
+└── omega/
 ```
 
-Where the new softsync manifest file `./bar/.softsync` will contain:
+Where the new softsync manifest file `./alpha/bar/.softsync` will contain:
 
 ```json
 {
@@ -132,9 +139,9 @@ Where the new softsync manifest file `./bar/.softsync` will contain:
 }
 ```
 
-Then make a soft copy of one of the files, giving the copy a different name:
+Then make a soft copy of the `foo/world.txt` file, but this time giving the copy a different name:
 
-`softsync cp foo/world.txt bar/mars.txt`
+`softsync cp -R alpha foo/world.txt bar/mars.txt`
 
 Now the manifest will contain:
 
@@ -155,7 +162,7 @@ Now the manifest will contain:
 
 The `ls` command can be used to list the contents of a directory, eg:
 
-`softsync ls foo`
+`softsync ls -R alpha foo`
 
 Yields:
 
@@ -166,7 +173,7 @@ world.txt
 
 And:
 
-`softsync ls bar`
+`softsync ls -R alpha bar`
 
 Yields:
 ```
@@ -178,25 +185,27 @@ Finally, make materialised copies of files that may exist only as
 softlinks, optionally using the `symbolic` option to produce symlinks
 if desired:
 
-`softsync cp -R bar:qux hello.txt`
+`softsync cp -R alpha:omega bar/hello.txt`
 
-`softsync cp -R bar:qux mars.txt --symbolic`
+`softsync cp -R alpha:omega bar/mars.txt --symbolic`
 
 Yields:
 
 ```
 ./
-└── foo/
-      ├── hello.txt
-      └── world.txt
-└── bar/
-      └── .softsync
-└── qux/
-      ├── hello.txt
-      └── mars.txt -> ../foo/world.txt
+├── alpha/
+│   ├── foo/
+│   │   ├── hello.txt
+│   │   └── world.txt
+│   └── bar/
+│         └── .softsync
+└── omega/
+    └── bar/
+        ├── hello.txt
+        └── mars.txt -> ../../alpha/foo/world.txt
 ```
 
-Where `hello.txt` is a regular copy of the original `hello.txt` file,
+Where the new `hello.txt` is a regular copy of the original `hello.txt` file,
 and `mars.txt` is a symlink pointing to the original `world.txt` file.
 
 The `cp` command supports the normal globbing patterns characters
@@ -220,14 +229,14 @@ Custom file filtering functions can also be can be used to select which
 files to process.
 
 The following is the programmatic equivalent of a couple of the commands from
-the CLI examples above:
+the CLI examples above (and assuming the same working directory):
 
 ```python
 from softsync.common import Root, Roots, Options
 from softsync.commands.cp import softsync_cp
 
-# softsync cp foo/world.txt bar/mars.txt
-root = Root(".")
+# softsync cp -R alpha foo/world.txt bar/mars.txt
+root = Root("alpha")
 files = softsync_cp(
     root,
     "foo/world.txt",
@@ -236,16 +245,17 @@ files = softsync_cp(
 for file in files:
     print(file)
 
-# softsync cp -R bar:qux mars.txt --symbolic
+# softsync cp -R alpha:omega bar/mars.txt --symbolic
 roots = Roots(
-    (Root("bar"), Root("qux"))
+    (Root("alpha"),
+     Root("omega"))
 )
 options = Options(
     symbolic=True,
 )
 files = softsync_cp(
     roots,
-    "mars.txt",
+    "bar/mars.txt",
     options=options,
 )
 for file in files:

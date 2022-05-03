@@ -45,11 +45,11 @@ def softsync_repair_cli(args: List[str], parser: ArgumentParser) -> None:
 
 def softsync_repair(root: Root, path: str,
                     options: Options = Options()) -> Optional[List[FileEntry]]:
-    path_dir, path_file = split_path(root.path, path)
+    path_dir, path_file = split_path(root, path)
     if path_file is not None:
         raise CommandException("path must be a directory")
     try:
-        SoftSyncContext(root.path, path_dir, True, options)
+        SoftSyncContext(root, path_dir, True, options)
         return None
     except ContextCorruptException as e:
         if not options.dry_run:

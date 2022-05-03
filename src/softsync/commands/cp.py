@@ -57,8 +57,8 @@ def softsync_cp(root: Union[Root, Roots], src_path: str, dest_path: Optional[str
     if dest_root is None:
         if dest_path is None:
             raise CommandException("source root only present, expected both 'src-path' and 'dest-path' args")
-        src_dir, src_file = split_path(src_root.path, src_path)
-        dest_dir, dest_file = split_path(src_root.path, dest_path)
+        src_dir, src_file = split_path(src_root, src_path)
+        dest_dir, dest_file = split_path(src_root, dest_path)
         if not check_dirs_are_disjoint(src_dir, dest_dir):
             raise CommandException("'src' and 'dest' paths must be disjoint")
         if src_file is not None:
@@ -69,25 +69,25 @@ def softsync_cp(root: Union[Root, Roots], src_path: str, dest_path: Optional[str
                 raise CommandException("'dest-path' cannot be a glob pattern")
             if mapper is not None:
                 raise CommandException("'dest-path' must be a directory if mapper function is used")
-        return __dupe(src_root.path, src_dir, src_file, dest_dir, dest_file, options, matcher, mapper)
+        return __dupe(src_root, src_dir, src_file, dest_dir, dest_file, options, matcher, mapper)
     else:
         if dest_path is not None:
             raise CommandException("source and destination roots present, expected only 'src-path' arg")
         if mapper is not None:
             raise CommandException("source and destination roots present, cannot use mapper function")
-        src_dir, src_file = split_path(src_root.path, src_path)
+        src_dir, src_file = split_path(src_root, src_path)
         if src_file is not None:
             if matcher is not None:
                 raise CommandException("'src-path' must be a directory if matcher function is used")
-        return __sync(src_root.path, dest_root.path, src_dir, src_file, options, matcher)
+        return __sync(src_root, dest_root, src_dir, src_file, options, matcher)
 
 
-def __dupe(root_dir: str, src_dir: str, src_file: str, dest_dir: str, dest_file: str, options: Options,
+def __dupe(root: Root, src_dir: str, src_file: str, dest_dir: str, dest_file: str, options: Options,
            matcher: Optional[Callable] = None, mapper: Optional[Callable] = None) -> List[FileEntry]:
     if options.symbolic:
         raise CommandException("symbolic option is not valid here")
-    src_ctx = SoftSyncContext(root_dir, src_dir, True, options)
-    dest_ctx = SoftSyncContext(root_dir, dest_dir, False, options)
+    src_ctx = SoftSyncContext(root, src_dir, True, options)
+    dest_ctx = SoftSyncContext(root, dest_dir, False, options)
     relative_path = src_ctx.relative_path_to(dest_ctx)
     src_files = src_ctx.list_files(matcher if matcher is not None else src_file)
     for file in src_files:
@@ -97,10 +97,10 @@ def __dupe(root_dir: str, src_dir: str, src_file: str, dest_dir: str, dest_file:
     return src_files
 
 
-def __sync(src_root_dir: str, dest_root_dir: str, src_dir: str, src_file: str, options: Options,
+def __sync(src_root: Root, dest_root: Root, src_dir: str, src_file: str, options: Options,
            matcher: Optional[Callable] = None) -> List[FileEntry]:
-    src_ctx = SoftSyncContext(src_root_dir, src_dir, True, options)
-    dest_ctx = SoftSyncContext(dest_root_dir, src_dir, False, options)
+    src_ctx = SoftSyncContext(src_root, src_dir, True, options)
+    dest_ctx = SoftSyncContext(dest_root, src_dir, False, options)
     src_files = src_ctx.list_files(matcher if matcher is not None else src_file)
     context_cache = {}
     for file in src_files:

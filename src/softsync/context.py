@@ -3,11 +3,11 @@ import os
 import re
 import fnmatch
 import shutil
-from pathlib import Path
 
 from typing import List, Dict, Union, Optional, Callable, Pattern, Any
 
-from softsync.common import Options
+from softsync.common import Root, Options
+from softsync.common import resolve_path
 from softsync.exception import ContextException, ContextCorruptException
 
 
@@ -46,8 +46,8 @@ class FileEntry:
 
 
 class SoftSyncContext:
-    def __init__(self, root_dir: str, path: str, path_must_exist: bool, options: Options = Options()):
-        self.__root_dir = root_dir
+    def __init__(self, root: Root, path: str, path_must_exist: bool, options: Options = Options()):
+        self.__root = root
         self.__path = "" if path == "." else path
         self.__options = options
         self.__manifest: Optional[Dict[str, Any]] = None
@@ -55,7 +55,7 @@ class SoftSyncContext:
         self.__init_files()
 
     def __init_full_path(self, path_must_exist: bool) -> None:
-        self.__full_path = os.path.join(self.__root_dir, self.__path)
+        self.__full_path = os.path.join(self.__root.path, self.__path)
         if os.path.exists(self.__full_path):
             if not os.path.isdir(self.__full_path):
                 raise ContextException(f"path is not a directory: {self.__path}")
@@ -113,8 +113,8 @@ class SoftSyncContext:
             json.dump(self.__manifest, file, indent=2)
 
     def relative_path_to(self, other: "SoftSyncContext") -> str:
-        if self.__root_dir != other.__root_dir:
-            raise ValueError("contexts must have the same root dir")
+        if self.__root != other.__root:
+            raise ValueError("contexts must have the same root")
         src_dir = self.__path.split(os.sep)
         dest_dir = other.__path.split(os.sep)
         index: int = 0
@@ -160,7 +160,7 @@ class SoftSyncContext:
 
     def sync_file(self, file: FileEntry, dest_ctx: "SoftSyncContext",
                   context_cache: Optional[Dict[str, "SoftSyncContext"]] = None):
-        if self.__root_dir == dest_ctx.__root_dir:
+        if self.__root.path == dest_ctx.__root.path:
             raise ValueError("contexts must not have the same root dir")
         context, src_file = self.__resolve(file.name, context_cache)
         src_file = os.path.join(context.__full_path, src_file)
@@ -170,16 +170,23 @@ class SoftSyncContext:
                   context_cache: Optional[Dict[str, "SoftSyncContext"]] = None) -> ("SoftSyncContext", str):
         file = self.__files.get(file_name, None)
         if file is None:
-            raise ContextException(f"failed to resolve file: {file_name}")
+            raise ContextException(f"failed to resolve file: {file_name}, not found")
         if not file.is_soft():
             return self
-        link_file_path = os.path.join(self.__root_dir, file.link)
-        root_dir = os.path.dirname(str(Path(link_file_path).resolve()))
-        context = context_cache.get(root_dir, None) if context_cache is not None else None
-        if context is None:
-            context = SoftSyncContext(root_dir, ".", True, self.__options)
-            if context_cache is not None:
-                context_cache[root_dir] = context
+        link_dir = os.path.dirname(file.link)
+        if link_dir:
+            link_path = os.path.join(self.__path, link_dir)
+            try:
+                path = resolve_path(link_path)
+            except IndexError:
+                raise ContextException(f"failed to resolve file: {file_name}, path escaped root: {link_path}")
+            context = context_cache.get(path, None) if context_cache is not None else None
+            if context is None:
+                context = SoftSyncContext(self.__root, path, True, self.__options)
+                if context_cache is not None:
+                    context_cache[path] = context
+        else:
+            context = self
         link_name = os.path.basename(file.link)
         return context.__resolve(link_name, context_cache), link_name
 

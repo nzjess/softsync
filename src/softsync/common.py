@@ -74,6 +74,9 @@ class Root:
         return self.__scheme == other.__scheme and \
                self.__path == other.__path
 
+    def __ne__(self, other):
+        return not self == other
+
     @property
     def scheme(self) -> str:
         return self.__scheme
@@ -103,7 +106,7 @@ class Roots:
             elif len(roots) == 2:
                 self.__dest = Root(roots[1])
             else:
-                raise CommandException("invalid roots, too many components")
+                raise CommandException("invalid roots, expected 1 or 2 components")
         elif isinstance(roots, Root):
             self.__src = roots
             self.__dest = None
@@ -112,7 +115,7 @@ class Roots:
                 self.__src = roots[0]
                 self.__dest = roots[1]
             else:
-                raise CommandException("invalid roots, too many components")
+                raise CommandException("invalid roots, expected 2 components")
         else:
             raise ValueError(f"invalid type for roots: {type(roots)}")
         if self.__src.scheme != "file" or (self.__dest is not None and self.__dest.scheme != "file"):
@@ -138,7 +141,7 @@ def is_glob_pattern(name: str) -> bool:
            name.find("?") != -1
 
 
-def split_path(root: str, path: str) -> (str, Optional[str]):
+def split_path(root: Root, path: str) -> (str, Optional[str]):
     path = path.strip()
     if path.startswith(os.sep):
         raise CommandException("invalid path, cannot be absolute")
@@ -157,7 +160,7 @@ def split_path(root: str, path: str) -> (str, Optional[str]):
             if is_glob_pattern(component):
                 raise CommandException("invalid path, invalid glob patterns")
     split = path.rsplit(os.sep, 1)
-    full_path = os.path.join(root, path)
+    full_path = os.path.join(root.path, path)
     if os.path.exists(full_path):
         if os.path.isdir(full_path):
             return path, None
@@ -177,6 +180,19 @@ def split_path(root: str, path: str) -> (str, Optional[str]):
         else:
             return split[0], split[1]
     return path, None
+
+
+def resolve_path(path: str) -> str:
+    resolved = []
+    components = path.split(os.sep)
+    for component in components:
+        if component == ".":
+            continue
+        elif component == "..":
+            resolved.pop()
+        else:
+            resolved.append(component)
+    return os.sep.join(resolved)
 
 
 def check_dirs_are_disjoint(path1: str, path2: str) -> bool:
