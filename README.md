@@ -228,7 +228,7 @@ the CLI examples above (and assuming the same working directory):
 ```python
 from pathlib3x import Path
 
-from softsync.common import Root, Roots, Options
+from softsync.common import Root, Options
 from softsync.commands.cp import softsync_cp
 
 # softsync cp -R alpha foo/world.txt bar/mars.txt
@@ -237,24 +237,23 @@ src_path = Path("foo/world.txt")
 dest_path = Path("bar/mars.txt")
 files = softsync_cp(
     root,
-    src_path,
-    dest_path,
+    src_path=src_path,
+    dest_path=dest_path,
 )
 for file in files:
     print(file)
 
 # softsync cp -R alpha:omega bar/mars.txt --symbolic
-roots = Roots(
-    (Root("alpha"),
-     Root("omega"))
-)
+src_root = Root("alpha")
+dest_root = Root("omega")
 src_path = Path("bar/mars.txt")
 options = Options(
     symbolic=True,
 )
 files = softsync_cp(
-    roots,
-    src_path,
+    src_root=src_root,
+    src_path=src_path,
+    dest_root=dest_root,
     options=options,
 )
 for file in files:

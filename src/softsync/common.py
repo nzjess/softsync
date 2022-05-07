@@ -1,7 +1,7 @@
 from pathlib3x import Path
 from urllib.parse import urlparse
 
-from typing import Optional, Union, Tuple
+from typing import Optional
 
 from softsync.storage import StorageScheme
 from softsync.exception import SoftSyncException, CommandException
@@ -85,55 +85,24 @@ class Root:
         return self.__path
 
 
-class Roots:
-    def __init__(self, roots: Union[str, Root, Tuple[Root, Root]]):
-        if isinstance(roots, str):
-            roots = roots.strip()
-            if not roots:
-                raise CommandException("invalid root, empty")
-            if roots.find("*") >= 0 or roots.find("?") >= 0:
-                raise CommandException("invalid root, invalid chars")
-            roots = roots.replace("://", "*")
-            roots = roots.replace(":\\", "?")
-            roots = roots.split(":")
-            roots = [r.replace("*", "://") for r in roots]
-            roots = [r.replace("?", ":\\") for r in roots]
-            self.__src = Root(roots[0])
-            self.__dest = None
-            if len(roots) == 1:
-                pass
-            elif len(roots) == 2:
-                self.__dest = Root(roots[1])
-            else:
-                raise CommandException("invalid roots: expected 1 or 2 components")
-        elif isinstance(roots, Root):
-            self.__src = roots
-            self.__dest = None
-        elif isinstance(roots, tuple):
-            if len(roots) == 2:
-                self.__src = roots[0]
-                self.__dest = roots[1]
-            else:
-                raise CommandException("invalid roots: expected 2 components")
-        else:
-            raise ValueError(f"invalid type for roots: {type(roots)}")
-        if self.__dest is not None:
-            if self.__dest.scheme.name != "file":
-                raise CommandException("'dest' root must have 'file://' scheme")
-            if self.__src.scheme == self.__dest.scheme:
-                if not check_paths_are_disjoint(self.__src.path, self.__dest.path):
-                    raise CommandException("'src' and 'dest' roots must be disjoint")
-
-    def __str__(self):
-        return f"{self.__src}:{self.__dest}"
-
-    @property
-    def src(self) -> Root:
-        return self.__src
-
-    @property
-    def dest(self) -> Root:
-        return self.__dest
+def parse_roots(roots: str) -> (Root, Optional[Root]):
+    roots = roots.strip()
+    if not roots:
+        raise CommandException("invalid root, empty")
+    if roots.find("*") >= 0 or roots.find("?") >= 0:
+        raise CommandException("invalid root, invalid chars")
+    roots = roots.replace("://", "*")
+    roots = roots.replace(":\\", "?")
+    roots = roots.split(":")
+    if len(roots) > 2:
+        raise CommandException("invalid roots: expected 1 or 2 components")
+    roots = [r.replace("*", "://") for r in roots]
+    roots = [r.replace("?", ":\\") for r in roots]
+    src_root = Root(roots[0])
+    dest_root = None
+    if len(roots) == 2:
+        dest_root = Root(roots[1])
+    return src_root, dest_root
 
 
 def split_path(root: Root, path: Path) -> (Path, Optional[str]):
