@@ -30,3 +30,7 @@ class ContextCorruptException(ContextException):
     @property
     def conflicts(self):
         return self.__conflicts
+
+
+class StorageSchemeException(SoftSyncException):
+    pass

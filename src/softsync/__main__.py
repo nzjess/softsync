@@ -6,7 +6,7 @@ from softsync.commands import cp
 from softsync.commands import ls
 from softsync.commands import repair
 
-from softsync.exception import CommandException, ContextException
+from softsync.exception import SoftSyncException, CommandException
 
 
 def __help(problem: str, parser: ArgumentParser = None) -> None:
@@ -39,11 +39,11 @@ def main():
         arg_parser = arg_parser()
         try:
             cli(args, arg_parser)
-        except ContextException as e:
-            print(str(e))
-            return 1
         except CommandException as e:
             __help(str(e), arg_parser)
+            return 1
+        except SoftSyncException as e:
+            print(str(e))
             return 1
     else:
         __help(f"Unknown command: {cmd}")

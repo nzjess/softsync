@@ -1,4 +1,5 @@
 from argparse import ArgumentParser
+from pathlib3x import Path
 
 from typing import List, Optional, Callable
 
@@ -18,7 +19,7 @@ def softsync_ls_arg_parser() -> ArgumentParser:
 def softsync_ls_cli(args: List[str], parser: ArgumentParser) -> None:
     cmdline = parser.parse_args(args)
     root = Root(cmdline.root)
-    path = cmdline.path[0]
+    path = Path(cmdline.path[0])
     options = Options()
     files = softsync_ls(
         root,
@@ -29,7 +30,7 @@ def softsync_ls_cli(args: List[str], parser: ArgumentParser) -> None:
         print(file)
 
 
-def softsync_ls(root: Root, path: str,
+def softsync_ls(root: Root, path: Path,
                 options: Options = Options(),
                 matcher: Optional[Callable] = None) -> List[FileEntry]:
     path_dir, path_file = split_path(root, path)

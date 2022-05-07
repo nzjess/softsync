@@ -222,25 +222,23 @@ The command line interface is just that, an interface.  All the
 commands can be used programmatically by importing the softsync API
 into your Python code.
 
-When used programmatically, the API is even more flexible.  For
-example, it can be provided with a "file rename" mapping function which will
-be used when copying multiple files from source to destination.
-Custom file filtering functions can also be can be used to select which
-files to process.
-
 The following is the programmatic equivalent of a couple of the commands from
 the CLI examples above (and assuming the same working directory):
 
 ```python
+from pathlib3x import Path
+
 from softsync.common import Root, Roots, Options
 from softsync.commands.cp import softsync_cp
 
 # softsync cp -R alpha foo/world.txt bar/mars.txt
 root = Root("alpha")
+src_path = Path("foo/world.txt")
+dest_path = Path("bar/mars.txt")
 files = softsync_cp(
     root,
-    "foo/world.txt",
-    "bar/mars.txt",
+    src_path,
+    dest_path,
 )
 for file in files:
     print(file)
@@ -250,14 +248,20 @@ roots = Roots(
     (Root("alpha"),
      Root("omega"))
 )
+src_path = Path("bar/mars.txt")
 options = Options(
     symbolic=True,
 )
 files = softsync_cp(
     roots,
-    "bar/mars.txt",
+    src_path,
     options=options,
 )
 for file in files:
     print(file)
 ```
+
+When used programmatically, the API is even more flexible.  For example,
+it can be provided with a file name mapping function, which will be used
+when copying multiple files from source to destination. Custom file
+filtering functions can also be can be used to select which files to copy.

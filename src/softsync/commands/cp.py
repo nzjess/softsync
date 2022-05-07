@@ -1,9 +1,10 @@
 from argparse import ArgumentParser
+from pathlib3x import Path
 
 from typing import List, Callable, Optional, Union
 
 from softsync.common import Root, Roots, Options
-from softsync.common import is_glob_pattern, split_path, check_dirs_are_disjoint
+from softsync.common import is_glob_pattern, split_path, check_paths_are_disjoint
 from softsync.context import SoftSyncContext, FileEntry
 from softsync.exception import CommandException
 
@@ -24,8 +25,8 @@ def softsync_cp_arg_parser() -> ArgumentParser:
 def softsync_cp_cli(args: List[str], parser: ArgumentParser) -> None:
     cmdline = parser.parse_args(args)
     roots = Roots(cmdline.roots)
-    src_path = cmdline.src_path[0]
-    dest_path = cmdline.dest_path
+    src_path = Path(cmdline.src_path[0])
+    dest_path = Path(cmdline.dest_path) if cmdline.dest_path is not None else None
     options = Options(
         force=cmdline.force,
         recursive=cmdline.recursive,
@@ -44,7 +45,7 @@ def softsync_cp_cli(args: List[str], parser: ArgumentParser) -> None:
             print(file)
 
 
-def softsync_cp(root: Union[Root, Roots], src_path: str, dest_path: Optional[str] = None, options: Options = Options(),
+def softsync_cp(root: Union[Root, Roots], src_path: Path, dest_path: Optional[Path] = None, options: Options = Options(),
                 matcher: Optional[Callable] = None, mapper: Optional[Callable] = None) -> List[FileEntry]:
     if isinstance(root, Roots):
         src_root = root.src
@@ -59,7 +60,7 @@ def softsync_cp(root: Union[Root, Roots], src_path: str, dest_path: Optional[str
             raise CommandException("source root only present, expected both 'src-path' and 'dest-path' args")
         src_dir, src_file = split_path(src_root, src_path)
         dest_dir, dest_file = split_path(src_root, dest_path)
-        if not check_dirs_are_disjoint(src_dir, dest_dir):
+        if not check_paths_are_disjoint(src_dir, dest_dir):
             raise CommandException("'src' and 'dest' paths must be disjoint")
         if src_file is not None:
             if matcher is not None:
@@ -82,7 +83,7 @@ def softsync_cp(root: Union[Root, Roots], src_path: str, dest_path: Optional[str
         return __sync(src_root, dest_root, src_dir, src_file, options, matcher)
 
 
-def __dupe(root: Root, src_dir: str, src_file: str, dest_dir: str, dest_file: str, options: Options,
+def __dupe(root: Root, src_dir: Path, src_file: str, dest_dir: Path, dest_file: str, options: Options,
            matcher: Optional[Callable] = None, mapper: Optional[Callable] = None) -> List[FileEntry]:
     if options.symbolic:
         raise CommandException("symbolic option is not valid here")
@@ -97,7 +98,7 @@ def __dupe(root: Root, src_dir: str, src_file: str, dest_dir: str, dest_file: st
     return src_files
 
 
-def __sync(src_root: Root, dest_root: Root, src_dir: str, src_file: str, options: Options,
+def __sync(src_root: Root, dest_root: Root, src_dir: Path, src_file: Path, options: Options,
            matcher: Optional[Callable] = None) -> List[FileEntry]:
     src_ctx = SoftSyncContext(src_root, src_dir, True, options)
     dest_ctx = SoftSyncContext(dest_root, src_dir, False, options)

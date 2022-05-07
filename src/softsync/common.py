@@ -1,10 +1,10 @@
-import os
-from pathlib import Path
+from pathlib3x import Path
 from urllib.parse import urlparse
 
 from typing import Optional, Union, Tuple
 
-from softsync.exception import CommandException
+from softsync.storage import StorageScheme
+from softsync.exception import SoftSyncException, CommandException
 
 
 class Options:
@@ -56,13 +56,12 @@ class Root:
             url = urlparse(spec)
             if url.params or url.query or url.fragment:
                 raise CommandException(f"invalid root: '{spec}': invalid format")
-            self.__scheme = url.scheme
-            self.__path = f"{url.netloc}{url.path}"
-            if self.__scheme == "file":
-                self.__path = str(Path(self.__path).resolve())
-                if os.path.exists(self.__path) and not os.path.isdir(self.__path):
-                    raise CommandException(f"invalid root: {self.__path} is not a directory")
-        except CommandException:
+            self.__scheme = StorageScheme.for_name(url.scheme)
+            self.__path = self.__scheme.path_resolve(Path(f"{url.netloc}{url.path}"))
+            if self.__scheme.path_exists(self.__path) and (
+                    self.__scheme.path_is_file(self.__path) or not self.__scheme.path_is_dir(self.__path)):
+                raise CommandException(f"invalid root: {self.__path} is not a directory")
+        except SoftSyncException:
             raise
         except Exception:
             raise CommandException("invalid root: could not parse")
@@ -78,11 +77,11 @@ class Root:
         return not self == other
 
     @property
-    def scheme(self) -> str:
+    def scheme(self) -> StorageScheme:
         return self.__scheme
 
     @property
-    def path(self) -> str:
+    def path(self) -> Path:
         return self.__path
 
 
@@ -106,7 +105,7 @@ class Roots:
             elif len(roots) == 2:
                 self.__dest = Root(roots[1])
             else:
-                raise CommandException("invalid roots, expected 1 or 2 components")
+                raise CommandException("invalid roots: expected 1 or 2 components")
         elif isinstance(roots, Root):
             self.__src = roots
             self.__dest = None
@@ -115,14 +114,15 @@ class Roots:
                 self.__src = roots[0]
                 self.__dest = roots[1]
             else:
-                raise CommandException("invalid roots, expected 2 components")
+                raise CommandException("invalid roots: expected 2 components")
         else:
             raise ValueError(f"invalid type for roots: {type(roots)}")
-        if self.__src.scheme != "file" or (self.__dest is not None and self.__dest.scheme != "file"):
-            raise CommandException("invalid root(s), must have file scheme")
-        if self.__src is not None and self.__dest is not None:
-            if not check_dirs_are_disjoint(self.__src.path, self.__dest.path):
-                raise CommandException("invalid roots, 'src' and 'dest' must be disjoint")
+        if self.__dest is not None:
+            if self.__dest.scheme.name != "file":
+                raise CommandException("'dest' root must have 'file://' scheme")
+            if self.__src.scheme == self.__dest.scheme:
+                if not check_paths_are_disjoint(self.__src.path, self.__dest.path):
+                    raise CommandException("'src' and 'dest' roots must be disjoint")
 
     def __str__(self):
         return f"{self.__src}:{self.__dest}"
@@ -136,74 +136,43 @@ class Roots:
         return self.__dest
 
 
-def is_glob_pattern(name: str) -> bool:
-    return name.find("*") != -1 or \
-           name.find("?") != -1
-
-
-def split_path(root: Root, path: str) -> (str, Optional[str]):
-    path = path.strip()
-    if path.startswith(os.sep):
-        raise CommandException("invalid path, cannot be absolute")
-    if path.startswith("." + os.sep):
-        path = path[2:]
-    has_trailing_slash = path.endswith(os.sep)
-    if has_trailing_slash:
-        path = path[:-1]
-    if path == ".":
+def split_path(root: Root, path: Path) -> (Path, Optional[str]):
+    if path.is_absolute():
+        raise CommandException(f"invalid path: {path} cannot be absolute")
+    if len(path.parts) == 0:
         return path, None
-    components = path.split(os.sep)
-    for i, component in enumerate(components):
-        if component == "." or component == "..":
-            raise CommandException("invalid path, cannot contain relative components")
-        if has_trailing_slash or i < len(components) - 1:
-            if is_glob_pattern(component):
-                raise CommandException("invalid path, invalid glob patterns")
-    split = path.rsplit(os.sep, 1)
-    full_path = os.path.join(root.path, path)
-    if os.path.exists(full_path):
-        if os.path.isdir(full_path):
+    for i, part in enumerate(path.parts):
+        if part == "..":
+            raise CommandException(f"invalid path: {path} cannot contain relative components")
+        if i < len(path.parts) - 1:
+            if is_glob_pattern(part):
+                raise CommandException(f"invalid path: {path} cannot contain glob pattern in parent path")
+    full_path = root.path / path
+    if root.scheme.path_exists(full_path):
+        if root.scheme.path_is_dir(full_path):
             return path, None
-        elif has_trailing_slash:
-            raise CommandException("invalid path, directory path cannot point to a file")
         else:
-            if len(split) == 1:
-                return ".", path
-            else:
-                return split[0], split[1]
-    if has_trailing_slash:
-        return path, None
-    rsplit = path if len(split) == 1 else split[1]
-    if is_glob_pattern(rsplit) or rsplit.find(".") != -1:  # heuristic
-        if len(split) == 1:
-            return ".", path
-        else:
-            return split[0], split[1]
+            return path.parent, path.name
+    if is_glob_pattern(path.name) or path.suffix != "":  # heuristic
+        return path.parent, path.name
     return path, None
 
 
-def resolve_path(path: str) -> str:
+def resolve_path(path: Path) -> Path:
     resolved = []
-    components = path.split(os.sep)
-    for component in components:
-        if component == ".":
-            continue
-        elif component == "..":
+    for part in path.parts:
+        if part == "..":
             resolved.pop()
         else:
-            resolved.append(component)
-    return os.sep.join(resolved)
+            resolved.append(part)
+    return Path(*resolved)
 
 
-def check_dirs_are_disjoint(path1: str, path2: str) -> bool:
-    path1 = __normalise_dir_path_for_disjoint_comparison(path1)
-    path2 = __normalise_dir_path_for_disjoint_comparison(path2)
-    return \
-        not path1.startswith(path2) and \
-        not path2.startswith(path1)
+def check_paths_are_disjoint(path1: Path, path2: Path) -> bool:
+    return not path1.is_relative_to(path2) and \
+           not path2.is_relative_to(path1)
 
 
-def __normalise_dir_path_for_disjoint_comparison(path: str) -> str:
-    if path != "." and not path.startswith(os.sep):
-        path = "./" + path
-    return path + os.sep
+def is_glob_pattern(name: str) -> bool:
+    return name.find("*") != -1 or \
+           name.find("?") != -1

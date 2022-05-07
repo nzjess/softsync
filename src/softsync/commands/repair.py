@@ -1,4 +1,5 @@
 from argparse import ArgumentParser
+from pathlib3x import Path
 
 from typing import List, Optional
 
@@ -21,7 +22,7 @@ def softsync_repair_arg_parser() -> ArgumentParser:
 def softsync_repair_cli(args: List[str], parser: ArgumentParser) -> None:
     cmdline = parser.parse_args(args)
     root = Root(cmdline.root)
-    path = cmdline.path[0]
+    path = Path(cmdline.path[0])
     options = Options(
         recursive=cmdline.recursive,
         verbose=cmdline.verbose,
@@ -43,7 +44,7 @@ def softsync_repair_cli(args: List[str], parser: ArgumentParser) -> None:
             print(message)
 
 
-def softsync_repair(root: Root, path: str,
+def softsync_repair(root: Root, path: Path,
                     options: Options = Options()) -> Optional[List[FileEntry]]:
     path_dir, path_file = split_path(root, path)
     if path_file is not None:
