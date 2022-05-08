@@ -157,11 +157,12 @@ class SoftSyncContext:
 
     def sync_file(self, file: FileEntry, dest_ctx: "SoftSyncContext",
                   context_cache: Optional[Dict[str, "SoftSyncContext"]] = None):
-        if self.__root.path == dest_ctx.__root.path:
-            raise ValueError("contexts must not have the same root dir")
-        context, src_file = self.__resolve(file.name, context_cache)
-        src_file = context.__full_path.joinpath(src_file)
-        dest_ctx.__sync(src_file, file.name)
+        if self.__root == dest_ctx.__root:
+            raise ValueError("contexts must not have the same root")
+        src_ctx, src_file = self.__resolve(file.name, context_cache)
+        src_file = src_ctx.__full_path.joinpath(src_file)
+        dest_file = dest_ctx.__full_path.joinpath(file.name)
+        dest_ctx.__sync(src_file, dest_file)
 
     def __resolve(self, file_name: str,
                   context_cache: Optional[Dict[str, "SoftSyncContext"]] = None) -> ("SoftSyncContext", str):
@@ -187,17 +188,16 @@ class SoftSyncContext:
             context = self
         return context.__resolve(link_name, context_cache)
 
-    def __sync(self, src_file: Path, dest_file: str):
-        dest_file_path = self.__full_path.joinpath(dest_file)
-        if self.__root.scheme.path_exists(dest_file_path):
-            if self.__root.scheme.path_is_dir(dest_file_path):
-                raise ContextException(f"destination exists as a directory: {dest_file}")
+    def __sync(self, src_file: Path, dest_file: Path):
+        if self.__root.scheme.path_exists(dest_file):
+            if self.__root.scheme.path_is_dir(dest_file):
+                raise ContextException(f"destination is a directory: {dest_file}")
             if not self.__options.force:
-                raise ContextException(f"destination file exists: {dest_file_path}")
-            dest_file_path.unlink()
+                raise ContextException(f"destination file exists: {dest_file}")
+            dest_file.unlink()
         self.__root.scheme.path_mkdir(self.__full_path)
         if not self.__options.dry_run:
             if self.__options.symbolic:
-                self.__root.scheme.path_symlink_to(src_file, dest_file_path)
+                self.__root.scheme.path_symlink_to(src_file, dest_file)
             else:
-                self.__root.scheme.path_hardlink_to(src_file, dest_file_path)
+                self.__root.scheme.path_hardlink_to(src_file, dest_file)

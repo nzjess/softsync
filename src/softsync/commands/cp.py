@@ -52,6 +52,8 @@ def softsync_cp(src_root: Root, src_path: Path,
                 matcher: Optional[Callable] = None,
                 mapper: Optional[Callable] = None) -> List[FileEntry]:
     if dest_root is None:
+        if options.symbolic:
+            raise CommandException("symbolic option is not valid here")
         if dest_path is None:
             raise CommandException("source root only present, expected both 'src-path' and 'dest-path' args")
         src_dir, src_file = split_path(src_root, src_path)
@@ -86,8 +88,6 @@ def softsync_cp(src_root: Root, src_path: Path,
 
 def __dupe(root: Root, src_dir: Path, src_file: str, dest_dir: Path, dest_file: str, options: Options,
            matcher: Optional[Callable] = None, mapper: Optional[Callable] = None) -> List[FileEntry]:
-    if options.symbolic:
-        raise CommandException("symbolic option is not valid here")
     src_ctx = SoftSyncContext(root, src_dir, True, options)
     dest_ctx = SoftSyncContext(root, dest_dir, False, options)
     relative_path = src_ctx.relative_path_to(dest_ctx)
