@@ -107,7 +107,7 @@ def __sync(src_root: Root, dest_root: Root, src_dir: Path, src_file: Path, optio
     src_ctx = SoftSyncContext(src_root, src_dir, True, options)
     dest_ctx = SoftSyncContext(dest_root, src_dir, False, options)
     src_files = src_ctx.list_files(matcher if matcher is not None else src_file)
-    context_cache = {}
     for file in src_files:
-        src_ctx.sync_file(file, dest_ctx, context_cache)
+        src_ctx.sync_file(file, dest_ctx)
+    dest_ctx.save()
     return src_files
