@@ -22,6 +22,10 @@ class Options:
         self.__verbose = verbose
         self.__dry_run = dry_run
 
+        # TODO add support for recursive option
+        if self.recursive:
+            raise CommandException("recursive option not implemented, yet")
+
     @property
     def force(self):
         return self.__force
