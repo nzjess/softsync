@@ -11,11 +11,13 @@ class Options:
     def __init__(self,
                  force: bool = False,
                  recursive: bool = False,
+                 reconstruct: bool = False,
                  symbolic: bool = False,
                  verbose: bool = False,
                  dry_run: bool = False):
         self.__force = force
         self.__recursive = recursive
+        self.__reconstruct = reconstruct
         self.__symbolic = symbolic
         self.__verbose = verbose
         self.__dry_run = dry_run
@@ -33,6 +35,10 @@ class Options:
         return self.__symbolic
 
     @property
+    def reconstruct(self):
+        return self.__reconstruct
+
+    @property
     def verbose(self):
         return self.__verbose
 
@@ -43,6 +49,7 @@ class Options:
     def __repr__(self):
         return f"force: {self.force}\n" \
                f"recursive: {self.recursive}\n" \
+               f"reconstruct: {self.reconstruct}\n" \
                f"symbolic: {self.symbolic}\n" \
                f"verbose: {self.verbose}\n" \
                f"dry_run: {self.dry_run}"

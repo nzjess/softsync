@@ -12,6 +12,7 @@ from softsync.exception import ContextException, ContextCorruptException
 
 SOFTSYNC_MANIFEST_FILENAME = ".softsync"
 SOFTLINKS_KEY = "softlinks"
+DEST_CONTEXT_CACHE_KEY = "**__dest_context_cache__**"
 
 
 class FileEntry:
@@ -163,18 +164,24 @@ class SoftSyncContext:
                   context_cache: Optional[Dict[str, "SoftSyncContext"]] = None):
         if self.__root == dest_ctx.__root:
             raise ValueError("contexts must not have the same root")
-        src_ctx, src_file = self.__resolve(file.name, context_cache)
+        src_ctx, dest_ctx, src_file = self.__resolve(file.name, dest_ctx, context_cache)
         src_file = src_ctx.__full_path.joinpath(src_file)
-        dest_file = dest_ctx.__full_path.joinpath(file.name)
+        dest_file = dest_ctx.__full_path.joinpath(
+            src_file.name if self.__options.reconstruct else file.name
+        )
         dest_ctx.__sync(src_file, dest_file)
 
-    def __resolve(self, file_name: str,
-                  context_cache: Optional[Dict[str, "SoftSyncContext"]] = None) -> ("SoftSyncContext", str):
+    def __resolve(self, file_name: str, dest_ctx: "SoftSyncContext",
+                  context_cache: Optional[Dict[str, "SoftSyncContext"]] = None) \
+            -> ("SoftSyncContext", "SoftSyncContext", str):
         file = self.__files.get(file_name, None)
         if file is None:
             raise ContextException(f"failed to resolve file: {file_name}, not found")
         if not file.is_soft():
-            return self, file.name
+            return self, dest_ctx, file.name
+        if self.__options.reconstruct:
+            dest_ctx.__add_file_entry(file, True)
+            dest_ctx.save()
         link_path = file.link.parent
         link_name = file.link.name
         if len(link_path.parts) > 0:
@@ -183,14 +190,18 @@ class SoftSyncContext:
                 path = resolve_path(link_path)
             except IndexError:
                 raise ContextException(f"failed to resolve file: {file_name}, path escaped root: {link_path}")
-            context = context_cache.get(path, None) if context_cache is not None else None
-            if context is None:
-                context = SoftSyncContext(self.__root, path, True, self.__options)
+            src_ctx = self.__context_for_path(self, path, True, context_cache)
+            if self.__options.reconstruct:
+                dest_context_cache = None
                 if context_cache is not None:
-                    context_cache[path] = context
+                    dest_context_cache = context_cache.get(DEST_CONTEXT_CACHE_KEY, None)
+                    if dest_context_cache is None:
+                        dest_context_cache = {}
+                        context_cache[DEST_CONTEXT_CACHE_KEY] = dest_context_cache
+                dest_ctx = self.__context_for_path(dest_ctx, path, False, dest_context_cache)
         else:
-            context = self
-        return context.__resolve(link_name, context_cache)
+            src_ctx = self
+        return src_ctx.__resolve(link_name, dest_ctx, context_cache)
 
     def __sync(self, src_file: Path, dest_file: Path):
         if self.__root.scheme.path_exists(dest_file):
@@ -206,3 +217,13 @@ class SoftSyncContext:
                 self.__root.scheme.path_symlink_to(src_file, dest_file)
             else:
                 self.__root.scheme.path_hardlink_to(src_file, dest_file)
+
+    @staticmethod
+    def __context_for_path(context: "SoftSyncContext", path: Path, path_must_exist: bool,
+                           context_cache: Optional[Dict[str, "SoftSyncContext"]] = None) -> "SoftSyncContext":
+        context_for_path = context_cache.get(path, None) if context_cache is not None else None
+        if context_for_path is None:
+            context_for_path = SoftSyncContext(context.__root, path, path_must_exist, context.__options)
+            if context_cache is not None:
+                context_cache[path] = context_for_path
+        return context_for_path

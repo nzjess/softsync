@@ -44,7 +44,7 @@ commands:
 
 `softsync cp -h`
 ```
-usage: softsync cp [-h] [-R src[:dest]] [-f] [-r] [-s] [-v] [--dry]
+usage: softsync cp [-h] [-R src[:dest]] [-f] [-r] [-c] [-s] [-v] [--dry]
                    src-path [dest-path]
 
 positional arguments:
@@ -57,6 +57,7 @@ optional arguments:
                         root dir(s)
   -f, --force           copy over duplicates
   -r, --recursive       recurse into sub-directories
+  -c, --reconstruct     reconstruct file hierarchy
   -s, --symbolic        produce symlink
   -v, --verbose         verbose output
   --dry                 dry run only
@@ -93,6 +94,8 @@ optional arguments:
   --dry                 dry run only
 ```
 
+_Note: none of the commands support the **--recursive** option, yet._
+
 ### Examples
 
 Start with a directory containing some regular files and folders, like this:
@@ -101,13 +104,14 @@ Start with a directory containing some regular files and folders, like this:
 ./
 ├── alpha/
 │   └── foo/
-│         ├── hello.txt
-│         └── world.txt
-└── omega/
+│       ├── hello.txt
+│       └── world.txt
+├── omega/
+└── zeta/
 ```
 
-This represents two "root" directories, `alpha` and `omega`.  The first starts out with some normal files.
-The second is empty, for now.
+This represents three "root" directories, `alpha`, `omega` and `zeta`.  The first starts out with some
+normal files. The second two are empty, for now.
 
 First make a soft copy of the `foo/hello.txt` file into a new `bar` subdirectory, within the `alpha` root:
 
@@ -119,11 +123,12 @@ This will yield:
 ./
 ├── alpha/
 │   ├── foo/
-│   │     ├── hello.txt
-│   │     └── world.txt
+│   │   ├── hello.txt
+│   │   └── world.txt
 │   └── bar/
-│         └── .softsync
-└── omega/
+│       └── .softsync
+├── omega/
+└── zeta/
 ```
 
 Where the new softsync manifest file `./alpha/bar/.softsync` will contain:
@@ -181,13 +186,10 @@ hello.txt -> ../foo/hello.txt
 mars.txt -> ../foo/world.txt
 ```
 
-Finally, make materialised copies of files that may exist only as
-softlinks, optionally using the `symbolic` option to produce symlinks
-if desired:
+Now, reconstruct a root from an existing one for just the file or files
+you are interested in:
 
-`softsync cp -R alpha:omega bar/hello.txt`
-
-`softsync cp -R alpha:omega bar/mars.txt --symbolic`
+`softsync cp -R alpha:omega bar/mars.txt --reconstruct`
 
 Yields:
 
@@ -198,11 +200,73 @@ Yields:
 │   │   ├── hello.txt
 │   │   └── world.txt
 │   └── bar/
-│         └── .softsync
-└── omega/
+│       └── .softsync
+├── omega/
+│   ├── foo/
+│   │   └── world.txt
+│   └── bar/
+│       └── .softsync
+└── zeta/
+```
+
+Where the softsync manifest file in `./omega/bar/.softsync` will have the
+same contents as in the first step above.
+
+Now reconstruct based on the `hello.txt` file, but this time using the
+symbolic option:
+
+`softsync cp -R alpha:omega bar/hello.txt --reconstruct --symbolic`
+
+This yields:
+
+```
+./
+├── alpha/
+│   ├── foo/
+│   │   ├── hello.txt
+│   │   └── world.txt
+│   └── bar/
+│       └── .softsync
+├── omega/
+│   ├── foo/
+│   │   ├── hello.txt -> ../../alpha/foo/world.txt
+│   │   └── world.txt
+│   └── bar/
+│       └── .softsync
+└── zeta/
+```
+
+The `./omega/bar/.softsync` manifest file will now contain softlinks for
+both files.
+
+Finally, make materialised copies of files that may exist only as
+softlinks, optionally using the `symbolic` option to produce symlinks
+if desired:
+
+`softsync cp -R omega:zeta bar/hello.txt`
+
+`softsync cp -R omega:zeta bar/mars.txt --symbolic`
+
+Yields:
+
+```
+./
+├── alpha/
+│   ├── foo/
+│   │   ├── hello.txt
+│   │   └── world.txt
+│   └── bar/
+│       └── .softsync
+├── omega/
+│   ├── foo/
+│   │   ├── hello.txt -> ../../alpha/foo/world.txt
+│   │   └── world.txt
+│   └── bar/
+│       └── .softsync
+└── zeta/
     └── bar/
         ├── hello.txt
-        └── mars.txt -> ../../alpha/foo/world.txt
+        └── mars.txt -> ../../omega/foo/world.txt
 ```
 
 Where the new `hello.txt` is a regular copy of the original `hello.txt` file,
@@ -243,9 +307,25 @@ files = softsync_cp(
 for file in files:
     print(file)
 
-# softsync cp -R alpha:omega bar/mars.txt --symbolic
+# softsync cp -R alpha:omega bar/mars.txt --reconstruct
 src_root = Root("alpha")
 dest_root = Root("omega")
+src_path = Path("bar/mars.txt")
+options = Options(
+    reconstruct=True,
+)
+files = softsync_cp(
+    src_root=src_root,
+    src_path=src_path,
+    dest_root=dest_root,
+    options=options,
+)
+for file in files:
+    print(file)
+
+# softsync cp -R omega:zeta bar/mars.txt --symbolic
+src_root = Root("omega")
+dest_root = Root("zeta")
 src_path = Path("bar/mars.txt")
 options = Options(
     symbolic=True,

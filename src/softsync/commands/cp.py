@@ -16,6 +16,7 @@ def softsync_cp_arg_parser() -> ArgumentParser:
     parser.add_argument("dest_path", metavar="dest-path", type=str, nargs='?', default=None)
     parser.add_argument("-f", "--force", dest="force", help="copy over duplicates", action='store_true')
     parser.add_argument("-r", "--recursive", dest="recursive", help="recurse into sub-directories", action='store_true')
+    parser.add_argument("-c", "--reconstruct", dest="reconstruct", help="reconstruct file hierarchy", action='store_true')
     parser.add_argument("-s", "--symbolic", dest="symbolic", help="produce symlink", action='store_true')
     parser.add_argument("-v", "--verbose", dest="verbose", help="verbose output", action='store_true')
     parser.add_argument("--dry", dest="dry_run", help="dry run only", action='store_true')
@@ -30,6 +31,7 @@ def softsync_cp_cli(args: List[str], parser: ArgumentParser) -> None:
     options = Options(
         force=cmdline.force,
         recursive=cmdline.recursive,
+        reconstruct=cmdline.reconstruct,
         symbolic=cmdline.symbolic,
         verbose=cmdline.verbose,
         dry_run=cmdline.dry_run,
@@ -54,6 +56,8 @@ def softsync_cp(src_root: Root, src_path: Path,
     if dest_root is None:
         if options.symbolic:
             raise CommandException("symbolic option is not valid here")
+        if options.reconstruct:
+            raise CommandException("reconstruct option is not valid here")
         if dest_path is None:
             raise CommandException("source root only present, expected both 'src-path' and 'dest-path' args")
         src_dir, src_file = split_path(src_root, src_path)
