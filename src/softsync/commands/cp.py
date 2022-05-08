@@ -94,8 +94,7 @@ def __dupe(root: Root, src_dir: Path, src_file: str, dest_dir: Path, dest_file: 
     src_files = src_ctx.list_files(matcher if matcher is not None else src_file)
     for file in src_files:
         dest_ctx.dupe_file(file, relative_path, mapper if mapper is not None else dest_file)
-    if not options.dry_run:
-        dest_ctx.save()
+    dest_ctx.save()
     return src_files
 
 

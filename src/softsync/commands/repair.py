@@ -53,6 +53,5 @@ def softsync_repair(root: Root, path: Path,
         SoftSyncContext(root, path_dir, True, options)
         return None
     except ContextCorruptException as e:
-        if not options.dry_run:
-            e.source.save()
+        e.source.save()
         return e.conflicts

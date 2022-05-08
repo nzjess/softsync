@@ -99,6 +99,8 @@ class SoftSyncContext:
         return existing_entry
 
     def save(self) -> None:
+        if self.__options.dry_run:
+            return
         self.__root.scheme.path_mkdir(self.__full_path)
         with self.__root.scheme.path_open(self.__manifest_file, mode='w') as file:
             if self.__manifest is None:
@@ -194,9 +196,10 @@ class SoftSyncContext:
                 raise ContextException(f"destination is a directory: {dest_file}")
             if not self.__options.force:
                 raise ContextException(f"destination file exists: {dest_file}")
-            dest_file.unlink()
-        self.__root.scheme.path_mkdir(self.__full_path)
+            if not self.__options.dry_run:
+                dest_file.unlink()
         if not self.__options.dry_run:
+            self.__root.scheme.path_mkdir(self.__full_path)
             if self.__options.symbolic:
                 self.__root.scheme.path_symlink_to(src_file, dest_file)
             else:
