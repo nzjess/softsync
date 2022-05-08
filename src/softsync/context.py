@@ -68,6 +68,8 @@ class SoftSyncContext:
         if self.__root.scheme.path_exists(self.__full_path):
             for entry in self.__root.scheme.path_listdir(self.__full_path):
                 if entry.is_file():
+                    if entry.name == SOFTSYNC_MANIFEST_FILENAME:
+                        continue
                     file_entry = FileEntry(entry.name)
                     if self.__add_file_entry(file_entry, False) is not None:
                         raise ValueError(f"FATAL filesystem conflict, in: {self.__path}, on: {entry.name}")
