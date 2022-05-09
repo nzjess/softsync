@@ -94,6 +94,3 @@ class FileStorageScheme(StorageScheme):
 
     def path_hardlink_to(self, source: Path, target: Path) -> None:
         source.link_to(target)
-
-
-FileStorageScheme()

@@ -23,7 +23,7 @@ CLI_COMMANDS = {
 }
 
 
-def main():
+def cli():
     cmd = None if len(sys.argv) < 2 else sys.argv[1]
 
     if cmd is None or cmd == "-h":
@@ -51,4 +51,4 @@ def main():
 
 
 if __name__ == "__main__":
-    main()
+    cli()
