@@ -43,7 +43,16 @@ commands:
 
 #### cp
 
+The `cp` command is the central softsync command.  It has three main functions,
+depending on what parameters are passed.  First, it creates softlinks, either to
+real files or to other softlinks.  Second, it can reconstruct a root for just a
+selection of files, into another root, following softlinks as required in order
+to ensure that the real files that are softlinked to are present in the
+reconstructed root.  And third, it can materialise real (or symlinked) copies
+of softlinked files from one root into another.
+
 `softsync cp -h`
+
 ```
 usage: softsync cp [-h] [-R src[:dest]] [-f] [-r] [-c] [-s] [-v] [--dry]
                    src-path [dest-path]
@@ -66,6 +75,9 @@ optional arguments:
 
 #### rm
 
+The `rm` command can be used to remove existing softlinks (or even real files,
+if you really want to).
+
 `softsync rm -h`
 
 ```
@@ -85,7 +97,11 @@ optional arguments:
 
 #### ls
 
+The `ls` command can be used to produce listings the files in a directory,
+including any softlinks present.
+
 `softsync ls -h`
+
 ```
 usage: softsync ls [-h] [-R root] path
 
@@ -98,6 +114,11 @@ optional arguments:
 ```
 
 #### repair
+
+The `repair` command can be used to re-write the softsync manifest file in a
+given directory according to the current contents of the directory - this may
+be necessary if the softlink manifest gets into conflict with the real files
+present.
 
 `softsync repair -h`
 ```
@@ -130,10 +151,11 @@ Start with a directory containing some regular files and folders, like this:
 └── zeta/
 ```
 
-This represents three "root" directories, `alpha`, `omega` and `zeta`.  The first starts out with some
-normal files. The second two are empty, for now.
+This represents three "root" directories, `alpha`, `omega` and `zeta`.  The first
+starts out with some normal files. The second two are empty, for now.
 
-First make a soft copy of the `foo/hello.txt` file into a new `bar` subdirectory, within the `alpha` root:
+First make a soft copy of the `foo/hello.txt` file into a new `bar` subdirectory,
+within the `alpha` root:
 
 `softsync cp -R alpha foo/hello.txt bar`
 
@@ -164,7 +186,8 @@ Where the new softsync manifest file `./alpha/bar/.softsync` will contain:
 }
 ```
 
-Then make a soft copy of the `foo/world.txt` file, but this time giving the copy a different name:
+Then make a soft copy of the `foo/world.txt` file, but this time giving the
+copy a different name:
 
 `softsync cp -R alpha foo/world.txt bar/mars.txt`
 
