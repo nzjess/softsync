@@ -61,6 +61,10 @@ class StorageScheme(ABC):
     def path_hardlink_to(self, source: Path, target: Path) -> None:
         ...
 
+    @abstractmethod
+    def path_unlink(self, path) -> None:
+        ...
+
 
 class FileStorageScheme(StorageScheme):
 
@@ -94,3 +98,6 @@ class FileStorageScheme(StorageScheme):
 
     def path_hardlink_to(self, source: Path, target: Path) -> None:
         source.link_to(target)
+
+    def path_unlink(self, path) -> None:
+        path.unlink()

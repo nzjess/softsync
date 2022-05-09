@@ -69,7 +69,6 @@ class SoftSyncContext:
 
     def load(self) -> None:
         self.__files.clear()
-        self.__dirty = False
         if self.__root.scheme.path_exists(self.__full_path):
             for entry in self.__root.scheme.path_listdir(self.__full_path):
                 if entry.is_file():
@@ -96,6 +95,7 @@ class SoftSyncContext:
                                 conflicts,
                                 self
                             )
+        self.__dirty = False
 
     def __add_file_entry(self, file_entry: FileEntry, strict: bool) -> Optional[FileEntry]:
         existing_entry = self.__files.get(file_entry.name)
@@ -104,6 +104,22 @@ class SoftSyncContext:
             self.__dirty = True
         elif strict:
             raise ContextException(f"file already exists: {existing_entry}")
+        return existing_entry
+
+    def __remove_file_entry(self, file_entry, strict: bool) -> Optional[FileEntry]:
+        existing_entry = self.__files.get(file_entry.name)
+        if existing_entry is not None:
+            if existing_entry.is_soft():
+                del self.__files[existing_entry.name]
+                self.__dirty = True
+            else:
+                file_path = self.__full_path / existing_entry.name
+                if self.__options.force:
+                    self.__root.scheme.path_unlink(file_path)
+                else:
+                    raise ContextException(f"not removing real file: {file_path}")
+        elif strict:
+            raise ContextException(f"file does not exist: {file_entry}")
         return existing_entry
 
     def save(self) -> None:
@@ -142,8 +158,7 @@ class SoftSyncContext:
         relative_path.extend(src_parts[index:])
         return Path(*relative_path)
 
-    def list_files(self,
-                   file_matcher: Optional[Union[str, Pattern, Callable]] = None) -> List[FileEntry]:
+    def list_files(self, file_matcher: Optional[Union[str, Pattern, Callable]] = None) -> List[FileEntry]:
         files: List[FileEntry] = list(self.__files.values())
         if file_matcher is not None:
             if isinstance(file_matcher, str):
@@ -172,7 +187,7 @@ class SoftSyncContext:
         file_entry = FileEntry(dest_file, link)
         self.__add_file_entry(file_entry, True)
 
-    def sync_file(self, file: FileEntry, dest_ctx: "SoftSyncContext"):
+    def sync_file(self, file: FileEntry, dest_ctx: "SoftSyncContext") -> None:
         if self.__root == dest_ctx.__root:
             raise ValueError("contexts must not have the same root")
         src_ctx, dest_ctx, src_file = self.__resolve(file.name, dest_ctx)
@@ -181,6 +196,11 @@ class SoftSyncContext:
             src_file.name if self.__options.reconstruct else file.name
         )
         dest_ctx.__sync(src_file, dest_file)
+
+    def rm_file(self, file: FileEntry) -> None:
+        if self.__options.dry_run:
+            return
+        return self.__remove_file_entry(file, True)
 
     def __resolve(self, file_name: str, dest_ctx: "SoftSyncContext") -> ("SoftSyncContext", "SoftSyncContext", str):
         file = self.__files.get(file_name, None)

@@ -36,6 +36,7 @@ Usage: softsync cmd [-h] [args...]
 
 commands:
   cp
+  rm
   ls
   repair
 ```
@@ -59,6 +60,25 @@ optional arguments:
   -r, --recursive       recurse into sub-directories
   -c, --reconstruct     reconstruct file hierarchy
   -s, --symbolic        produce symlink
+  -v, --verbose         verbose output
+  --dry                 dry run only
+```
+
+#### rm
+
+`softsync rm -h`
+
+```
+usage: softsync rm [-h] [-R root] [-f] [-r] [-v] [--dry] path
+
+positional arguments:
+  path
+
+optional arguments:
+  -h, --help            show this help message and exit
+  -R root, --root root  root dir
+  -f, --force           copy over duplicates
+  -r, --recursive       recurse into sub-directories
   -v, --verbose         verbose output
   --dry                 dry run only
 ```

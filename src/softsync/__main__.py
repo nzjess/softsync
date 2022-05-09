@@ -3,6 +3,7 @@ import os
 from argparse import ArgumentParser
 
 from softsync.commands import cp
+from softsync.commands import rm
 from softsync.commands import ls
 from softsync.commands import repair
 
@@ -18,6 +19,7 @@ def __help(problem: str, parser: ArgumentParser = None) -> None:
 
 CLI_COMMANDS = {
     "cp": (cp.softsync_cp_cli, cp.softsync_cp_arg_parser),
+    "rm": (rm.softsync_rm_cli, rm.softsync_rm_arg_parser),
     "ls": (ls.softsync_ls_cli, ls.softsync_ls_arg_parser),
     "repair": (repair.softsync_repair_cli, repair.softsync_repair_arg_parser)
 }
