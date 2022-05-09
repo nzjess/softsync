@@ -1,11 +1,5 @@
 import setuptools
 
-# Local imports
-import setup_utils
-
-requirements = setup_utils.get_requirements()
-dev_requirements = setup_utils.get_dev_requirements()
-
 setuptools.setup(
     name="softsync",
     version="0.2.0-beta",
@@ -27,8 +21,14 @@ are called "softlinks".
     keywords=["FILESYSTEM", "SYMLINK", "UTILITY"],
     packages=setuptools.find_packages("src"),
     package_dir={"": "src"},
-    install_requires=requirements,
-    extras_require={"dev": dev_requirements},
+    install_requires=[
+        "pathlib3x>=1.3.9",
+    ],
+    extras_require={
+        "dev": [
+            "pytest>=6.2.4"
+        ],
+    },
     entry_points={"console_scripts": ["softsync=softsync:run"]},
     classifiers=[
         "Development Status :: 4 - Beta",
