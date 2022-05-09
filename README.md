@@ -28,6 +28,8 @@ pip >= 21.3.1
 
 `pip install softsync`
 
+`alias ss=softsync`
+
 ### Usage
 
 `softsync -h`
