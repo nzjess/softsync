@@ -65,7 +65,7 @@ class SoftSyncContext:
         else:
             if path_must_exist:
                 raise ContextException(f"directory does not exist: {self.__path}")
-        self.__manifest_file = self.__full_path.joinpath(self.__full_path, SOFTSYNC_MANIFEST_FILENAME)
+        self.__manifest_file = self.__full_path.joinpath(SOFTSYNC_MANIFEST_FILENAME)
 
     def load(self) -> None:
         self.__files.clear()
