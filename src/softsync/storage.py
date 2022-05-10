@@ -27,15 +27,21 @@ class StorageScheme(ABC):
     def __init__(self, url: namedtuple):
         self.__name = url.scheme
 
-    def __str__(self):
-        return self.name
-
     @property
     def name(self):
         return self.__name
 
+    @property
     @abstractmethod
-    def path_resolve(self, path: Path) -> Path:
+    def mount_delimiter(self):
+        ...
+
+    @abstractmethod
+    def path_resolve_absolute(self, path: Path) -> Path:
+        ...
+
+    @abstractmethod
+    def path_resolve_mount(self, path: Path) -> str:
         ...
 
     @abstractmethod
@@ -89,8 +95,15 @@ class FileStorageScheme(StorageScheme):
     def __init__(self, url: namedtuple):
         super().__init__(url)
 
-    def path_resolve(self, path: Path) -> Path:
+    @property
+    def mount_delimiter(self):
+        return ""
+
+    def path_resolve_absolute(self, path: Path) -> Path:
         return path.resolve()
+
+    def path_resolve_mount(self, path: Path) -> str:
+        return ""  # TODO https://stackoverflow.com/questions/4453602/how-to-find-the-mountpoint-a-file-resides-on
 
     def path_exists(self, path: Path) -> bool:
         return path.exists()
