@@ -65,9 +65,7 @@ class Root:
             spec = f"file://{spec}"
         try:
             url = urlparse(spec)
-            if url.params or url.query or url.fragment:
-                raise CommandException(f"invalid root: '{spec}': invalid format")
-            self.__scheme = StorageScheme.for_name(url.scheme)
+            self.__scheme = StorageScheme.for_url(url)
             self.__path = self.__scheme.path_resolve(Path(f"{url.netloc}{url.path}"))
             if self.__scheme.path_exists(self.__path) and (
                     self.__scheme.path_is_file(self.__path) or not self.__scheme.path_is_dir(self.__path)):

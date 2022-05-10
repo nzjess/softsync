@@ -1,9 +1,9 @@
 from .__main__ import cli
-from .storage import FileStorageScheme
+from .storage import StorageScheme, FileStorageScheme
 
 
 # register file:// storage scheme as standard
-FileStorageScheme()
+StorageScheme.register_scheme("file", FileStorageScheme)
 
 
 def run():

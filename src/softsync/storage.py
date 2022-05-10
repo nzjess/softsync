@@ -1,29 +1,38 @@
 from abc import ABC, abstractmethod
+from collections import namedtuple
+
 from pathlib3x import Path
 
-from typing import Any, Iterable
+from typing import Dict, Any, Iterable, Type, TypeVar
 
 from softsync.exception import StorageSchemeException
 
 
 class StorageScheme(ABC):
 
-    __SCHEMES = {}
-
-    def __init__(self):
-        StorageScheme.__SCHEMES[self.name] = self
+    S = TypeVar("S", bound="StorageScheme")
+    __SCHEMES: Dict[str, Type[S]] = {}
 
     @staticmethod
-    def for_name(name: str) -> "StorageScheme":
-        scheme = StorageScheme.__SCHEMES.get(name, None)
-        if scheme is None:
-            raise StorageSchemeException(f"invalid scheme: '{name}' not supported")
-        return scheme
+    def register_scheme(scheme_name: str, cls: Type[S]):
+        StorageScheme.__SCHEMES[scheme_name] = cls
+
+    @staticmethod
+    def for_url(url: namedtuple) -> "StorageScheme":
+        scheme_class = StorageScheme.__SCHEMES.get(url.scheme, None)
+        if scheme_class is None:
+            raise StorageSchemeException(f"invalid scheme: '{url.scheme}' not supported")
+        return scheme_class(url)
+
+    def __init__(self, url: namedtuple):
+        self.__name = url.scheme
+
+    def __str__(self):
+        return self.name
 
     @property
-    @abstractmethod
-    def name(self) -> str:
-        ...
+    def name(self):
+        return self.__name
 
     @abstractmethod
     def path_resolve(self, path: Path) -> Path:
@@ -68,9 +77,17 @@ class StorageScheme(ABC):
 
 class FileStorageScheme(StorageScheme):
 
-    @property
-    def name(self) -> str:
-        return "file"
+    __INSTANCE = None
+
+    def __new__(cls, url: namedtuple):
+        if url.params or url.query or url.fragment:
+            raise StorageSchemeException(f"invalid root, failed to parse: {url}")
+        if FileStorageScheme.__INSTANCE is None:
+            FileStorageScheme.__INSTANCE = object.__new__(cls)
+        return FileStorageScheme.__INSTANCE
+
+    def __init__(self, url: namedtuple):
+        super().__init__(url)
 
     def path_resolve(self, path: Path) -> Path:
         return path.resolve()
