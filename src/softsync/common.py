@@ -82,9 +82,9 @@ class Root:
 
     def __eq__(self, other):
         return self.__class__ == other.__class__ and \
-               self.__scheme.name == other.__scheme.name and \
-               self.__mount == other.__mount and \
-               self.__path == other.__path
+               self.scheme.name == other.scheme.name and \
+               self.mount == other.mount and \
+               self.path == other.path
 
     def __ne__(self, other):
         return not self == other
@@ -92,6 +92,10 @@ class Root:
     @property
     def scheme(self) -> StorageScheme:
         return self.__scheme
+
+    @property
+    def mount(self) -> str:
+        return self.__mount
 
     @property
     def path(self) -> Path:
