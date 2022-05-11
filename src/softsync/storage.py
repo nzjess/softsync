@@ -31,17 +31,8 @@ class StorageScheme(ABC):
     def name(self):
         return self.__name
 
-    @property
     @abstractmethod
-    def mount_delimiter(self):
-        ...
-
-    @abstractmethod
-    def path_resolve_absolute(self, path: Path) -> Path:
-        ...
-
-    @abstractmethod
-    def path_resolve_mount(self, path: Path) -> str:
+    def resolve_location(self, url: namedtuple) -> (str, Path, str):
         ...
 
     @abstractmethod
@@ -95,15 +86,14 @@ class FileStorageScheme(StorageScheme):
     def __init__(self, url: namedtuple):
         super().__init__(url)
 
-    @property
-    def mount_delimiter(self):
-        return ""
-
-    def path_resolve_absolute(self, path: Path) -> Path:
-        return path.resolve()
-
-    def path_resolve_mount(self, path: Path) -> str:
-        return ""  # TODO https://stackoverflow.com/questions/4453602/how-to-find-the-mountpoint-a-file-resides-on
+    def resolve_location(self, url: namedtuple) -> (str, Path, str):
+        path = Path(f"{url.netloc}{url.path}").resolve()
+        # TODO resolve mount point
+        mount = ""
+        # https://www.geeksforgeeks.org/python-os-path-ismount-method/
+        # https://stackoverflow.com/questions/4453602/how-to-find-the-mountpoint-a-file-resides-on
+        location = str(path)
+        return mount, path, location
 
     def path_exists(self, path: Path) -> bool:
         return path.exists()

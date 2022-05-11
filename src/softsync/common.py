@@ -65,10 +65,8 @@ class Root:
             spec = f"file://{spec}"
         try:
             url = urlparse(spec)
-            path = Path(f"{url.netloc}{url.path}")
             self.__scheme = StorageScheme.for_url(url)
-            self.__path = self.__scheme.path_resolve_absolute(path)
-            self.__mount = self.__scheme.path_resolve_mount(self.__path)
+            self.__mount, self.__path, self.__location = self.__scheme.resolve_location(url)
             if self.__scheme.path_exists(self.__path) and (
                     self.__scheme.path_is_file(self.__path) or not self.__scheme.path_is_dir(self.__path)):
                 raise CommandException(f"invalid root: {self.__path} is not a directory")
@@ -78,7 +76,7 @@ class Root:
             raise CommandException("invalid root: could not parse")
 
     def __str__(self):
-        return f"{self.__scheme.name}://{self.__mount}{self.__scheme.mount_delimiter}{self.__path}"
+        return f"{self.scheme.name}://{self.__location}"
 
     def __eq__(self, other):
         return self.__class__ == other.__class__ and \
