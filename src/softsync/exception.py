@@ -34,3 +34,7 @@ class ContextCorruptException(ContextException):
 
 class StorageSchemeException(SoftSyncException):
     pass
+
+
+class SyncException(SoftSyncException):
+    pass

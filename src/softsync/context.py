@@ -7,8 +7,8 @@ from typing import List, Dict, Union, Optional, Callable, Pattern, Any
 
 from softsync.common import Root, Options
 from softsync.common import resolve_path
+from softsync.sync import sync
 from softsync.exception import ContextException, ContextCorruptException
-
 
 SOFTSYNC_MANIFEST_FILENAME = ".softsync"
 SOFTLINKS_KEY = "softlinks"
@@ -56,6 +56,10 @@ class SoftSyncContext:
         self.__dirty = False
         self.__init(path_must_exist)
         self.load()
+
+    @property
+    def root(self) -> Root:
+        return self.__root
 
     def __init(self, path_must_exist: bool) -> None:
         self.__full_path = self.__root.path / self.__path
@@ -197,7 +201,7 @@ class SoftSyncContext:
         dest_file = dest_ctx.__full_path.joinpath(
             src_file_name if self.__options.reconstruct else original_src_file_name
         )
-        src_ctx.__sync(src_file, dest_ctx, dest_file)
+        sync(src_file, src_ctx, dest_file, dest_ctx, self.__options)
 
     def rm_file(self, file: FileEntry) -> None:
         if self.__options.dry_run:
@@ -223,21 +227,6 @@ class SoftSyncContext:
         if self.__options.reconstruct:
             dest_ctx = dest_ctx.__context_for_path(path, False)
         return src_ctx.__resolve(link_name, dest_ctx)
-
-    def __sync(self, src_file: Path, dest_ctx: "SoftSyncContext", dest_file: Path):
-        if dest_ctx.__root.scheme.path_exists(dest_file):
-            if dest_ctx.__root.scheme.path_is_dir(dest_file):
-                raise ContextException(f"destination is a directory: {dest_file}")
-            if not self.__options.force:
-                raise ContextException(f"destination file exists: {dest_file}")
-            if not self.__options.dry_run:
-                dest_ctx.__root.scheme.path_unlink(dest_file)
-        if not self.__options.dry_run:
-            self.__root.scheme.path_mkdir(self.__full_path)
-            if self.__options.symbolic:
-                self.__root.scheme.path_symlink_to(src_file, dest_file)
-            else:
-                self.__root.scheme.path_hardlink_to(src_file, dest_file)
 
     def __context_for_path(self, path: Path, path_must_exist: bool) -> "SoftSyncContext":
         if path == self.__path:
