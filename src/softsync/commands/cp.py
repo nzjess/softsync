@@ -94,10 +94,9 @@ def __dupe(root: Root, src_dir: Path, src_file: str, dest_dir: Path, dest_file: 
            matcher: Optional[Callable] = None, mapper: Optional[Callable] = None) -> List[FileEntry]:
     src_ctx = SoftSyncContext(root, src_dir, True, options)
     dest_ctx = SoftSyncContext(root, dest_dir, False, options)
-    relative_path = src_ctx.relative_path_to(dest_ctx)
     src_files = src_ctx.list_files(matcher if matcher is not None else src_file)
-    for file in src_files:
-        dest_ctx.dupe_file(file, relative_path, mapper if mapper is not None else dest_file)
+    for src_file in src_files:
+        dest_ctx.dupe_file(src_file, src_ctx, mapper if mapper is not None else dest_file)
     dest_ctx.save()
     return src_files
 
@@ -107,7 +106,7 @@ def __sync(src_root: Root, dest_root: Root, src_dir: Path, src_file: Path, optio
     src_ctx = SoftSyncContext(src_root, src_dir, True, options)
     dest_ctx = SoftSyncContext(dest_root, src_dir, False, options)
     src_files = src_ctx.list_files(matcher if matcher is not None else src_file)
-    for file in src_files:
-        src_ctx.sync_file(file, dest_ctx)
+    for src_file in src_files:
+        dest_ctx.sync_file(src_file, src_ctx)
     dest_ctx.save()
     return src_files

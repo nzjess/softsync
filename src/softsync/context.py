@@ -173,8 +173,9 @@ class SoftSyncContext:
                 raise ValueError(f"invalid type for file_matcher: {type(file_matcher)}")
         return files
 
-    def dupe_file(self, src_file: FileEntry, relative_path: Path,
+    def dupe_file(self, src_file: FileEntry, src_ctx: "SoftSyncContext",
                   file_mapper: Optional[Union[str, Callable]] = None) -> None:
+        relative_path = src_ctx.relative_path_to(self)
         if file_mapper is None:
             dest_file = src_file.name
         elif isinstance(file_mapper, str):
@@ -187,15 +188,16 @@ class SoftSyncContext:
         file_entry = FileEntry(dest_file, link)
         self.__add_file_entry(file_entry, True)
 
-    def sync_file(self, file: FileEntry, dest_ctx: "SoftSyncContext") -> None:
-        if self.__root == dest_ctx.__root:
+    def sync_file(self, src_file: FileEntry, src_ctx: "SoftSyncContext") -> None:
+        if self.__root == src_ctx.__root:
             raise ValueError("contexts must not have the same root")
-        src_ctx, dest_ctx, src_file = self.__resolve(file.name, dest_ctx)
-        src_file = src_ctx.__full_path.joinpath(src_file)
+        original_src_file_name = src_file.name
+        src_ctx, dest_ctx, src_file_name = src_ctx.__resolve(original_src_file_name, self)
+        src_file = src_ctx.__full_path.joinpath(src_file_name)
         dest_file = dest_ctx.__full_path.joinpath(
-            src_file.name if self.__options.reconstruct else file.name
+            src_file_name if self.__options.reconstruct else original_src_file_name
         )
-        dest_ctx.__sync(src_file, dest_file)
+        src_ctx.__sync(src_file, dest_ctx, dest_file)
 
     def rm_file(self, file: FileEntry) -> None:
         if self.__options.dry_run:
@@ -222,14 +224,14 @@ class SoftSyncContext:
             dest_ctx = dest_ctx.__context_for_path(path, False)
         return src_ctx.__resolve(link_name, dest_ctx)
 
-    def __sync(self, src_file: Path, dest_file: Path):
-        if self.__root.scheme.path_exists(dest_file):
-            if self.__root.scheme.path_is_dir(dest_file):
+    def __sync(self, src_file: Path, dest_ctx: "SoftSyncContext", dest_file: Path):
+        if dest_ctx.__root.scheme.path_exists(dest_file):
+            if dest_ctx.__root.scheme.path_is_dir(dest_file):
                 raise ContextException(f"destination is a directory: {dest_file}")
             if not self.__options.force:
                 raise ContextException(f"destination file exists: {dest_file}")
             if not self.__options.dry_run:
-                self.__root.scheme.path_unlink(dest_file)
+                dest_ctx.__root.scheme.path_unlink(dest_file)
         if not self.__options.dry_run:
             self.__root.scheme.path_mkdir(self.__full_path)
             if self.__options.symbolic:
