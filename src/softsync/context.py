@@ -229,7 +229,7 @@ class SoftSyncContext:
             if not self.__options.force:
                 raise ContextException(f"destination file exists: {dest_file}")
             if not self.__options.dry_run:
-                dest_file.unlink()
+                self.__root.scheme.path_unlink(dest_file)
         if not self.__options.dry_run:
             self.__root.scheme.path_mkdir(self.__full_path)
             if self.__options.symbolic:
