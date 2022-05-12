@@ -2,7 +2,7 @@ import setuptools
 
 setuptools.setup(
     name="softsync",
-    version="0.5.0-beta",
+    version="0.7.0-beta",
     python_requires=">=3.6",
     license="MIT",
     license_file="LICENSE",
@@ -28,7 +28,7 @@ workarounds to this are suitable for your use-case).
     author="Jesse McLaughlin",
     author_email="jesse@ubercraft.org",
     url="https://github.com/nzjess/softsync",
-    download_url="https://github.com/nzjess/softsync/archive/refs/tags/v0.5.0-beta.tar.gz",
+    download_url="https://github.com/nzjess/softsync/archive/refs/tags/v0.7.0-beta.tar.gz",
     keywords=["FILESYSTEM", "SYMLINK", "UTILITY"],
     packages=setuptools.find_packages("src"),
     package_dir={"": "src"},
