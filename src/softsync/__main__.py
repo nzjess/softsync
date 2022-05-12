@@ -2,6 +2,8 @@ import sys
 import os
 from argparse import ArgumentParser
 
+from typing import List, Optional
+
 from softsync.commands import cp
 from softsync.commands import rm
 from softsync.commands import ls
@@ -25,22 +27,25 @@ CLI_COMMANDS = {
 }
 
 
-def cli():
-    cmd = None if len(sys.argv) < 2 else sys.argv[1]
+def cli(cli_args: Optional[List[str]] = None) -> None:
+    if cli_args is None:
+        cli_args = sys.argv
+
+    cmd = None if len(cli_args) < 2 else cli_args[1]
 
     if cmd is None or cmd == "-h":
         commands = "\n  ".join(list(CLI_COMMANDS.keys()))
-        __help(f"Usage: {os.path.basename(sys.argv[0])} cmd [-h] [args...]\n\ncommands:\n  {commands}")
+        __help(f"Usage: {os.path.basename(cli_args[0])} cmd [-h] [args...]\n\ncommands:\n  {commands}")
         return 1
 
-    args = sys.argv[2:]
+    args = cli_args[2:]
 
     command = CLI_COMMANDS.get(cmd)
     if command is not None:
-        cli, arg_parser = command
+        cli_call, arg_parser = command
         arg_parser = arg_parser()
         try:
-            cli(args, arg_parser)
+            cli_call(args, arg_parser)
         except CommandException as e:
             __help(str(e), arg_parser)
             return 1

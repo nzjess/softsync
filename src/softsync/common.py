@@ -69,11 +69,11 @@ class Root:
             self.__mount, self.__path, self.__location = self.__scheme.resolve_location(url)
             if self.__scheme.path_exists(self.__path) and (
                     self.__scheme.path_is_file(self.__path) or not self.__scheme.path_is_dir(self.__path)):
-                raise CommandException(f"invalid root: {self.__path} is not a directory")
+                raise SoftSyncException(f"invalid root: {self.__path} is not a directory")
         except SoftSyncException:
             raise
-        except Exception:
-            raise CommandException("invalid root: could not parse")
+        except Exception as e:
+            raise SoftSyncException(f"failed to create root: {e}")
 
     def __str__(self):
         return f"{self.scheme.name}://{self.__location}"
