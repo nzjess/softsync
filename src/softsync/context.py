@@ -15,6 +15,7 @@ SOFTLINKS_KEY = "softlinks"
 
 
 class FileEntry:
+
     def __init__(self, name: str, link: Optional[Union[Path, str]] = None):
         self.__name = name
         self.__link = link if isinstance(link, Path) else Path(link) if link is not None else None
@@ -45,6 +46,7 @@ class FileEntry:
 
 
 class SoftSyncContext:
+
     def __init__(self, root: Root, path: Path, path_must_exist: bool, options: Options = Options(),
                  cache: Optional[Dict[str, "SoftSyncContext"]] = None):
         self.__root = root
@@ -61,6 +63,14 @@ class SoftSyncContext:
     def root(self) -> Root:
         return self.__root
 
+    @property
+    def path(self) -> Path:
+        return self.__path
+
+    @property
+    def options(self) -> Options:
+        return self.__options
+
     def __init(self, path_must_exist: bool) -> None:
         self.__full_path = self.__root.path / self.__path
         if self.__root.scheme.path_exists(self.__full_path):
@@ -74,13 +84,12 @@ class SoftSyncContext:
     def load(self) -> None:
         self.__files.clear()
         if self.__root.scheme.path_exists(self.__full_path):
-            for entry in self.__root.scheme.path_listdir(self.__full_path):
-                if entry.is_file():
-                    if entry.name == SOFTSYNC_MANIFEST_FILENAME:
-                        continue
-                    file_entry = FileEntry(entry.name)
-                    if self.__add_file_entry(file_entry, False) is not None:
-                        raise ValueError(f"FATAL filesystem conflict, in: {self.__path}, on: {entry.name}")
+            for entry in self.__root.scheme.path_list_files(self.__full_path):
+                if entry.name == SOFTSYNC_MANIFEST_FILENAME:
+                    continue
+                file_entry = FileEntry(entry.name)
+                if self.__add_file_entry(file_entry, False) is not None:
+                    raise ValueError(f"FATAL filesystem conflict, in: {self.__path}, on: {entry.name}")
             if self.__root.scheme.path_exists(self.__manifest_file):
                 if not self.__root.scheme.path_is_file(self.__manifest_file):
                     raise ContextException("manifest file location conflict")
@@ -119,7 +128,7 @@ class SoftSyncContext:
             else:
                 file_path = self.__full_path / existing_entry.name
                 if self.__options.force:
-                    self.__root.scheme.path_unlink(file_path)
+                    self.__root.scheme.path_delete(file_path)
                 else:
                     raise ContextException(f"not removing real file: {file_path}")
         elif strict:
@@ -201,7 +210,7 @@ class SoftSyncContext:
         dest_file = dest_ctx.__full_path.joinpath(
             src_file_name if self.__options.reconstruct else original_src_file_name
         )
-        sync(src_file, src_ctx, dest_file, dest_ctx, self.__options)
+        sync(src_file, src_ctx, dest_file, dest_ctx)
 
     def rm_file(self, file: FileEntry) -> None:
         if self.__options.dry_run:

@@ -1,11 +1,10 @@
 from abc import ABC, abstractmethod
 from collections import namedtuple
-
 from pathlib3x import Path
 
-from typing import Dict, Any, Iterable, Type, TypeVar
+from typing import Dict, Generator, Type, TypeVar, ContextManager, IO
 
-from softsync.exception import StorageSchemeException
+from softsync.exception import SchemeException
 
 
 class StorageScheme(ABC):
@@ -21,7 +20,7 @@ class StorageScheme(ABC):
     def for_url(url: namedtuple) -> "StorageScheme":
         scheme_class = StorageScheme.__SCHEMES.get(url.scheme, None)
         if scheme_class is None:
-            raise StorageSchemeException(f"invalid scheme: '{url.scheme}' not supported")
+            raise SchemeException(f"invalid scheme: '{url.scheme}' not supported")
         return scheme_class(url)
 
     def __init__(self, url: namedtuple):
@@ -48,7 +47,11 @@ class StorageScheme(ABC):
         ...
 
     @abstractmethod
-    def path_listdir(self, path: Path) -> Iterable[Any]:
+    def path_list_files(self, path: Path) -> Generator[Path, None, None]:
+        ...
+
+    @abstractmethod
+    def path_list_dirs(self, path: Path) -> Generator[Path, None, None]:
         ...
 
     @abstractmethod
@@ -56,29 +59,21 @@ class StorageScheme(ABC):
         ...
 
     @abstractmethod
-    def path_open(self, path: Path, mode: str) -> Any:
+    def path_open(self, path: Path, mode: str) -> ContextManager[IO]:
         ...
 
     @abstractmethod
-    def path_symlink_to(self, source: Path, target: Path) -> None:
-        ...
-
-    @abstractmethod
-    def path_hardlink_to(self, source: Path, target: Path) -> None:
-        ...
-
-    @abstractmethod
-    def path_unlink(self, path) -> None:
+    def path_delete(self, path) -> None:
         ...
 
 
 class FileStorageScheme(StorageScheme):
 
-    __INSTANCE = None
+    __INSTANCE: "FileStorageScheme" = None
 
     def __new__(cls, url: namedtuple):
         if url.params or url.query or url.fragment:
-            raise StorageSchemeException(f"invalid root, failed to parse: {url}")
+            raise SchemeException(f"invalid root, failed to parse: {url}")
         if FileStorageScheme.__INSTANCE is None:
             FileStorageScheme.__INSTANCE = object.__new__(cls)
         return FileStorageScheme.__INSTANCE
@@ -104,20 +99,21 @@ class FileStorageScheme(StorageScheme):
     def path_is_file(self, path: Path) -> bool:
         return path.is_file()
 
-    def path_listdir(self, path: Path) -> Iterable[Any]:
-        return path.iterdir()
+    def path_list_files(self, path: Path) -> Generator[Path, None, None]:
+        for entry in Path(path).iterdir():
+            if entry.is_file():
+                yield entry
+
+    def path_list_dirs(self, path: Path) -> Generator[Path, None, None]:
+        for entry in Path(path).iterdir():
+            if entry.is_dir():
+                yield entry
 
     def path_mkdir(self, path: Path) -> None:
         return path.mkdir(exist_ok=True)
 
-    def path_open(self, path: Path, mode: str) -> Any:
+    def path_open(self, path: Path, mode: str) -> ContextManager[IO]:
         return path.open(mode=mode)
 
-    def path_symlink_to(self, source: Path, target: Path) -> None:
-        target.symlink_to(source)
-
-    def path_hardlink_to(self, source: Path, target: Path) -> None:
-        source.link_to(target)
-
-    def path_unlink(self, path) -> None:
+    def path_delete(self, path) -> None:
         path.unlink()

@@ -32,7 +32,7 @@ class ContextCorruptException(ContextException):
         return self.__conflicts
 
 
-class StorageSchemeException(SoftSyncException):
+class SchemeException(SoftSyncException):
     pass
 
 

@@ -1,24 +1,39 @@
+from enum import Enum
 from pathlib3x import Path
 from urllib.parse import urlparse
 
-from typing import Optional
+from typing import Optional, List
 
-from softsync.storage import StorageScheme
+from softsync.scheme import StorageScheme
 from softsync.exception import SoftSyncException, CommandException
 
 
+class Sync(Enum):
+
+    SYMBOLIC = 1
+    HARDLINK = 2
+    COPY = 3
+
+    @staticmethod
+    def as_list(sync: str, delim: str = ","):
+        return [Sync[name.strip().upper()] for name in sync.split(delim)] \
+            if sync else []
+
+
 class Options:
+
     def __init__(self,
                  force: bool = False,
                  recursive: bool = False,
                  reconstruct: bool = False,
-                 symbolic: bool = False,
+                 sync: List[Sync] = None,
                  verbose: bool = False,
-                 dry_run: bool = False):
+                 dry_run: bool = False,
+                 ):
         self.__force = force
         self.__recursive = recursive
         self.__reconstruct = reconstruct
-        self.__symbolic = symbolic
+        self.__sync = sync
         self.__verbose = verbose
         self.__dry_run = dry_run
 
@@ -27,39 +42,40 @@ class Options:
             raise CommandException("recursive option not implemented, yet")
 
     @property
-    def force(self):
+    def force(self) -> bool:
         return self.__force
 
     @property
-    def recursive(self):
+    def recursive(self) -> bool:
         return self.__recursive
 
     @property
-    def symbolic(self):
-        return self.__symbolic
+    def sync(self) -> List[Sync]:
+        return self.__sync
 
     @property
-    def reconstruct(self):
+    def reconstruct(self) -> bool:
         return self.__reconstruct
 
     @property
-    def verbose(self):
+    def verbose(self) -> bool:
         return self.__verbose
 
     @property
-    def dry_run(self):
+    def dry_run(self) -> bool:
         return self.__dry_run
 
     def __repr__(self):
         return f"force: {self.force}\n" \
                f"recursive: {self.recursive}\n" \
                f"reconstruct: {self.reconstruct}\n" \
-               f"symbolic: {self.symbolic}\n" \
+               f"sync: {self.sync}\n" \
                f"verbose: {self.verbose}\n" \
                f"dry_run: {self.dry_run}"
 
 
 class Root:
+
     def __init__(self, spec: str):
         if spec.find("://") == -1:
             spec = f"file://{spec}"

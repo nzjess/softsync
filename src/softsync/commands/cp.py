@@ -3,7 +3,7 @@ from pathlib3x import Path
 
 from typing import List, Callable, Optional
 
-from softsync.common import Root, Options
+from softsync.common import Root, Options, Sync
 from softsync.common import parse_roots, is_glob_pattern, split_path, check_paths_are_disjoint
 from softsync.context import SoftSyncContext, FileEntry
 from softsync.exception import CommandException
@@ -17,7 +17,7 @@ def softsync_cp_arg_parser() -> ArgumentParser:
     parser.add_argument("-f", "--force", dest="force", help="copy over duplicates", action='store_true')
     parser.add_argument("-r", "--recursive", dest="recursive", help="recurse into sub-directories", action='store_true')
     parser.add_argument("-c", "--reconstruct", dest="reconstruct", help="reconstruct file hierarchy", action='store_true')
-    parser.add_argument("-s", "--symbolic", dest="symbolic", help="produce symlink", action='store_true')
+    parser.add_argument("-s", "--sync", dest="sync", metavar="modes", help="any of: symbolic,hardlink,copy", type=Sync.as_list)
     parser.add_argument("-v", "--verbose", dest="verbose", help="verbose output", action='store_true')
     parser.add_argument("--dry", dest="dry_run", help="dry run only", action='store_true')
     return parser
@@ -32,7 +32,7 @@ def softsync_cp_cli(args: List[str], parser: ArgumentParser) -> None:
         force=cmdline.force,
         recursive=cmdline.recursive,
         reconstruct=cmdline.reconstruct,
-        symbolic=cmdline.symbolic,
+        sync=cmdline.sync,
         verbose=cmdline.verbose,
         dry_run=cmdline.dry_run,
     )
@@ -54,10 +54,8 @@ def softsync_cp(src_root: Root, src_path: Path,
                 matcher: Optional[Callable] = None,
                 mapper: Optional[Callable] = None) -> List[FileEntry]:
     if dest_root is None:
-        if options.symbolic:
-            raise CommandException("symbolic option is not valid here")
-        if options.reconstruct:
-            raise CommandException("reconstruct option is not valid here")
+        if options.sync:
+            raise CommandException("sync option is not valid here")
         if dest_path is None:
             raise CommandException("source root only present, expected both 'src-path' and 'dest-path' args")
         src_dir, src_file = split_path(src_root, src_path)
@@ -74,8 +72,6 @@ def softsync_cp(src_root: Root, src_path: Path,
                 raise CommandException("'dest-path' must be a directory if mapper function is used")
         return __dupe(src_root, src_dir, src_file, dest_dir, dest_file, options, matcher, mapper)
     else:
-        if dest_root.scheme.name != "file":
-            raise CommandException("'dest' root must have 'file://' scheme")
         if src_root.scheme == dest_root.scheme:
             if not check_paths_are_disjoint(src_root.path, dest_root.path):
                 raise CommandException("'src' and 'dest' roots must be disjoint")

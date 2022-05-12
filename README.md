@@ -56,7 +56,7 @@ of softlinked files from one root into another.
 `softsync cp -h`
 
 ```
-usage: softsync cp [-h] [-R src[:dest]] [-f] [-r] [-c] [-s] [-v] [--dry]
+usage: softsync cp [-h] [-R src[:dest]] [-f] [-r] [-c] [-s modes] [-v] [--dry]
                    src-path [dest-path]
 
 positional arguments:
@@ -70,7 +70,8 @@ optional arguments:
   -f, --force           copy over duplicates
   -r, --recursive       recurse into sub-directories
   -c, --reconstruct     reconstruct file hierarchy
-  -s, --symbolic        produce symlink
+  -s modes, --sync modes
+                        any of: symbolic,hardlink,copy
   -v, --verbose         verbose output
   --dry                 dry run only
 ```
@@ -260,7 +261,7 @@ same contents as in the first step above.
 Now reconstruct based on the `hello.txt` file, but this time using the
 symbolic option:
 
-`softsync cp -R alpha:omega bar/hello.txt --reconstruct --symbolic`
+`softsync cp -R alpha:omega bar/hello.txt --reconstruct --sync=symbolic`
 
 This yields:
 
@@ -290,7 +291,7 @@ if desired:
 
 `softsync cp -R omega:zeta bar/hello.txt`
 
-`softsync cp -R omega:zeta bar/mars.txt --symbolic`
+`softsync cp -R omega:zeta bar/mars.txt --sync=symbolic`
 
 Yields:
 
@@ -337,7 +338,7 @@ the CLI examples above (and assuming the same working directory):
 ```python
 from pathlib3x import Path
 
-from softsync.common import Root, Options
+from softsync.common import Root, Options, Sync
 from softsync.commands.cp import softsync_cp
 
 # softsync cp -R alpha foo/world.txt bar/mars.txt
@@ -368,12 +369,12 @@ files = softsync_cp(
 for file in files:
     print(file)
 
-# softsync cp -R omega:zeta bar/mars.txt --symbolic
+# softsync cp -R omega:zeta bar/mars.txt --sync=symbolic
 src_root = Root("omega")
 dest_root = Root("zeta")
 src_path = Path("bar/mars.txt")
 options = Options(
-    symbolic=True,
+    sync=[Sync.SYMBOLIC],
 )
 files = softsync_cp(
     src_root=src_root,
