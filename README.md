@@ -14,9 +14,9 @@ either real or symbolic link form).
 
 What's the point?  This utility may be of use for simulating the benefits of symbolic links
 where the underlying storage supports the concept of files and directories, but does not
-provide direct support for symbolic links.  A good example of this is Amazon's S3, which
-can represent directory hierarchies, but has no native method of storing a symbolic link
-to another object.
+provide direct support for symbolic links.  A good example of this is Amazon's S3, which has
+no native method of storing a symbolic link to another object (and none of the many suggested
+workarounds to this are suitable for your use-case).
 
 ### Requires
 
