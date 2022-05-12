@@ -31,39 +31,39 @@ class StorageScheme(ABC):
         return self.__name
 
     @abstractmethod
-    def resolve_location(self, url: namedtuple) -> (str, Path, str):
+    def resolve_root(self, url: namedtuple) -> (str, Path, str):
         ...
 
     @abstractmethod
-    def path_exists(self, path: Path) -> bool:
+    def exists(self, path: Path) -> bool:
         ...
 
     @abstractmethod
-    def path_is_dir(self, path: Path) -> bool:
+    def is_dir(self, path: Path) -> bool:
         ...
 
     @abstractmethod
-    def path_is_file(self, path: Path) -> bool:
+    def is_file(self, path: Path) -> bool:
         ...
 
     @abstractmethod
-    def path_list_files(self, path: Path) -> Generator[Path, None, None]:
+    def list_files(self, path: Path) -> Generator[Path, None, None]:
         ...
 
     @abstractmethod
-    def path_list_dirs(self, path: Path) -> Generator[Path, None, None]:
+    def list_dirs(self, path: Path) -> Generator[Path, None, None]:
         ...
 
     @abstractmethod
-    def path_mkdir(self, path: Path) -> None:
+    def mkdir(self, path: Path) -> None:
         ...
 
     @abstractmethod
-    def path_open(self, path: Path, mode: str) -> ContextManager[IO]:
+    def open(self, path: Path, mode: str) -> ContextManager[IO]:
         ...
 
     @abstractmethod
-    def path_delete(self, path) -> None:
+    def delete(self, path) -> None:
         ...
 
 
@@ -81,7 +81,7 @@ class FileStorageScheme(StorageScheme):
     def __init__(self, url: namedtuple):
         super().__init__(url)
 
-    def resolve_location(self, url: namedtuple) -> (str, Path, str):
+    def resolve_root(self, url: namedtuple) -> (str, Path, str):
         path = Path(f"{url.netloc}{url.path}").resolve()
         # TODO resolve mount point
         mount = ""
@@ -90,30 +90,30 @@ class FileStorageScheme(StorageScheme):
         location = str(path)
         return mount, path, location
 
-    def path_exists(self, path: Path) -> bool:
+    def exists(self, path: Path) -> bool:
         return path.exists()
 
-    def path_is_dir(self, path: Path) -> bool:
+    def is_dir(self, path: Path) -> bool:
         return path.is_dir()
 
-    def path_is_file(self, path: Path) -> bool:
+    def is_file(self, path: Path) -> bool:
         return path.is_file()
 
-    def path_list_files(self, path: Path) -> Generator[Path, None, None]:
+    def list_files(self, path: Path) -> Generator[Path, None, None]:
         for entry in Path(path).iterdir():
             if entry.is_file():
                 yield entry
 
-    def path_list_dirs(self, path: Path) -> Generator[Path, None, None]:
+    def list_dirs(self, path: Path) -> Generator[Path, None, None]:
         for entry in Path(path).iterdir():
             if entry.is_dir():
                 yield entry
 
-    def path_mkdir(self, path: Path) -> None:
+    def mkdir(self, path: Path) -> None:
         return path.mkdir(exist_ok=True)
 
-    def path_open(self, path: Path, mode: str) -> ContextManager[IO]:
+    def open(self, path: Path, mode: str) -> ContextManager[IO]:
         return path.open(mode=mode)
 
-    def path_delete(self, path) -> None:
+    def delete(self, path) -> None:
         path.unlink()

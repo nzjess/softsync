@@ -82,9 +82,9 @@ class Root:
         try:
             url = urlparse(spec)
             self.__scheme = StorageScheme.for_url(url)
-            self.__mount, self.__path, self.__location = self.__scheme.resolve_location(url)
-            if self.__scheme.path_exists(self.__path) and (
-                    self.__scheme.path_is_file(self.__path) or not self.__scheme.path_is_dir(self.__path)):
+            self.__mount, self.__path, self.__location = self.__scheme.resolve_root(url)
+            if self.__scheme.exists(self.__path) and (
+                    self.__scheme.is_file(self.__path) or not self.__scheme.is_dir(self.__path)):
                 raise SoftSyncException(f"invalid root: {self.__path} is not a directory")
         except SoftSyncException:
             raise
@@ -148,8 +148,8 @@ def split_path(root: Root, path: Path) -> (Path, Optional[str]):
             if is_glob_pattern(part):
                 raise CommandException(f"invalid path: {path} cannot contain glob pattern in parent path")
     full_path = root.path / path
-    if root.scheme.path_exists(full_path):
-        if root.scheme.path_is_dir(full_path):
+    if root.scheme.exists(full_path):
+        if root.scheme.is_dir(full_path):
             return path, None
         else:
             return path.parent, path.name

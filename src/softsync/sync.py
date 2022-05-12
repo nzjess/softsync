@@ -12,17 +12,17 @@ if TYPE_CHECKING:
 
 def sync(src_file: Path, src_ctx: "SoftSyncContext",
          dest_file: Path, dest_ctx: "SoftSyncContext") -> None:
-    if dest_ctx.root.scheme.path_exists(dest_file):
-        if dest_ctx.root.scheme.path_is_dir(dest_file):
+    if dest_ctx.root.scheme.exists(dest_file):
+        if dest_ctx.root.scheme.is_dir(dest_file):
             raise SyncException(f"destination is a directory: {dest_file}")
         if not dest_ctx.options.force:
             raise SyncException(f"destination file exists: {dest_file}")
         if not dest_ctx.options.dry_run:
-            dest_ctx.root.scheme.path_delete(dest_file)
+            dest_ctx.root.scheme.delete(dest_file)
     if not dest_ctx.options.dry_run:
-        dest_ctx.root.scheme.path_mkdir(dest_file.parent)
+        dest_ctx.root.scheme.mkdir(dest_file.parent)
         StorageSync.for_schemes(src_ctx.root.scheme.name, dest_ctx.root.scheme.name) \
-            .path_sync_to(src_ctx.root, src_file, dest_ctx.root, dest_file, *dest_ctx.options.sync or [])
+            .sync(src_ctx.root, src_file, dest_ctx.root, dest_file, *dest_ctx.options.sync or [])
 
 
 class StorageSync(ABC):
@@ -42,19 +42,19 @@ class StorageSync(ABC):
         return scheme_class()
 
     @abstractmethod
-    def path_symlink_to(self, src_root: Root, src_file: Path, dest_root: Root, dest_file: Path) -> None:
+    def symlink(self, src_root: Root, src_file: Path, dest_root: Root, dest_file: Path) -> None:
         ...
 
     @abstractmethod
-    def path_hardlink_to(self, src_root: Root, src_file: Path, dest_root: Root, dest_file: Path) -> None:
+    def hardlink(self, src_root: Root, src_file: Path, dest_root: Root, dest_file: Path) -> None:
         ...
 
     @abstractmethod
-    def path_copy_to(self, src_root: Root, src_file: Path, dest_root: Root, dest_file: Path) -> None:
+    def copy(self, src_root: Root, src_file: Path, dest_root: Root, dest_file: Path) -> None:
         ...
 
     @abstractmethod
-    def path_sync_to(self, src_root: Root, src_file: Path, dest_root: Root, dest_file: Path, *modes: Sync) -> None:
+    def sync(self, src_root: Root, src_file: Path, dest_root: Root, dest_file: Path, *modes: Sync) -> None:
         ...
 
 
@@ -67,27 +67,27 @@ class FileFileStorageSync(StorageSync):
             FileFileStorageSync.__INSTANCE = object.__new__(cls)
         return FileFileStorageSync.__INSTANCE
 
-    def path_symlink_to(self, src_root: Root, src_file: Path, dest_root: Root, dest_file: Path) -> None:
+    def symlink(self, src_root: Root, src_file: Path, dest_root: Root, dest_file: Path) -> None:
         dest_file.symlink_to(src_file)
 
-    def path_hardlink_to(self, src_root: Root, src_file: Path, dest_root: Root, dest_file: Path) -> None:
+    def hardlink(self, src_root: Root, src_file: Path, dest_root: Root, dest_file: Path) -> None:
         src_file.link_to(dest_file)
 
-    def path_copy_to(self, src_root: Root, src_file: Path, dest_root: Root, dest_file: Path) -> None:
+    def copy(self, src_root: Root, src_file: Path, dest_root: Root, dest_file: Path) -> None:
         src_file.copy(dest_file)
 
-    def path_sync_to(self, src_root: Root, src_file: Path, dest_root: Root, dest_file: Path, *modes: Sync) -> None:
+    def sync(self, src_root: Root, src_file: Path, dest_root: Root, dest_file: Path, *modes: Sync) -> None:
         if not modes:
             modes = (Sync.HARDLINK, Sync.COPY)
         for mode in modes:
             if mode == Sync.SYMBOLIC:
-                self.path_symlink_to(src_root, src_file, dest_root, dest_file)
+                self.symlink(src_root, src_file, dest_root, dest_file)
                 return
             if mode == Sync.HARDLINK:
                 if src_root.mount == dest_root.mount:
-                    self.path_hardlink_to(src_root, src_file, dest_root, dest_file)
+                    self.hardlink(src_root, src_file, dest_root, dest_file)
                     return
             if mode == Sync.COPY:
-                self.path_copy_to(src_root, src_file, dest_root, dest_file)
+                self.copy(src_root, src_file, dest_root, dest_file)
                 return
         raise SyncException(f"failed to sync file: {src_file}")

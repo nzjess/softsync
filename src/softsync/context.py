@@ -73,8 +73,8 @@ class SoftSyncContext:
 
     def __init(self, path_must_exist: bool) -> None:
         self.__full_path = self.__root.path / self.__path
-        if self.__root.scheme.path_exists(self.__full_path):
-            if not self.__root.scheme.path_is_dir(self.__full_path):
+        if self.__root.scheme.exists(self.__full_path):
+            if not self.__root.scheme.is_dir(self.__full_path):
                 raise ContextException(f"path is not a directory: {self.__path}")
         else:
             if path_must_exist:
@@ -83,17 +83,17 @@ class SoftSyncContext:
 
     def load(self) -> None:
         self.__files.clear()
-        if self.__root.scheme.path_exists(self.__full_path):
-            for entry in self.__root.scheme.path_list_files(self.__full_path):
+        if self.__root.scheme.exists(self.__full_path):
+            for entry in self.__root.scheme.list_files(self.__full_path):
                 if entry.name == SOFTSYNC_MANIFEST_FILENAME:
                     continue
                 file_entry = FileEntry(entry.name)
                 if self.__add_file_entry(file_entry, False) is not None:
                     raise ValueError(f"FATAL filesystem conflict, in: {self.__path}, on: {entry.name}")
-            if self.__root.scheme.path_exists(self.__manifest_file):
-                if not self.__root.scheme.path_is_file(self.__manifest_file):
+            if self.__root.scheme.exists(self.__manifest_file):
+                if not self.__root.scheme.is_file(self.__manifest_file):
                     raise ContextException("manifest file location conflict")
-                with self.__root.scheme.path_open(self.__manifest_file, mode='r') as file:
+                with self.__root.scheme.open(self.__manifest_file, mode='r') as file:
                     self.__manifest = json.load(file)
                     entries: List[Dict[str, str]] = self.__manifest.get(SOFTLINKS_KEY, None)
                     if entries is not None:
@@ -128,7 +128,7 @@ class SoftSyncContext:
             else:
                 file_path = self.__full_path / existing_entry.name
                 if self.__options.force:
-                    self.__root.scheme.path_delete(file_path)
+                    self.__root.scheme.delete(file_path)
                 else:
                     raise ContextException(f"not removing real file: {file_path}")
         elif strict:
@@ -144,8 +144,8 @@ class SoftSyncContext:
     def __save(self) -> None:
         if not self.__dirty or self.__options.dry_run:
             return
-        self.__root.scheme.path_mkdir(self.__full_path)
-        with self.__root.scheme.path_open(self.__manifest_file, mode='w') as file:
+        self.__root.scheme.mkdir(self.__full_path)
+        with self.__root.scheme.open(self.__manifest_file, mode='w') as file:
             if self.__manifest is None:
                 self.__manifest = {}
             entries: List[Dict[str, str]] = []
