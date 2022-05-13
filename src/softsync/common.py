@@ -8,6 +8,9 @@ from softsync.scheme import StorageScheme
 from softsync.exception import SoftSyncException, CommandException
 
 
+FILE_SCHEME = "file"
+
+
 class Sync(Enum):
 
     SYMBOLIC = 1

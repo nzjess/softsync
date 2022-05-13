@@ -10,15 +10,15 @@ from softsync.exception import SchemeException
 class StorageScheme(ABC):
 
     S = TypeVar("S", bound="StorageScheme")
-    __SCHEMES: Dict[str, Type[S]] = {}
+    __SCHEME_TYPES: Dict[str, Type[S]] = {}
 
     @staticmethod
     def register_scheme(scheme_name: str, cls: Type[S]):
-        StorageScheme.__SCHEMES[scheme_name] = cls
+        StorageScheme.__SCHEME_TYPES[scheme_name] = cls
 
     @staticmethod
     def for_url(url: namedtuple) -> "StorageScheme":
-        scheme_class = StorageScheme.__SCHEMES.get(url.scheme, None)
+        scheme_class = StorageScheme.__SCHEME_TYPES.get(url.scheme, None)
         if scheme_class is None:
             raise SchemeException(f"invalid scheme: '{url.scheme}' not supported")
         return scheme_class(url)
